@@ -1,6 +1,6 @@
 # Purpose
 
-The purpose of this application is to provide a convenient way for students to track their grades for multiple courses.  Version 1.0 is nearly complete - it should be released within the week.  As of right now, the application is fully functional.  I still want to make some aesthetic changes and there isn't any input validation at the moment, but it works when used correctly.  Input validation will be added in the coming days.
+The purpose of this application is to provide a convenient way for students to track their grades for multiple courses.
 
 # Application Description
 The application was created using PyQT5.  The application consists of a single window containing a menubar and a tree table widget.
@@ -36,15 +36,10 @@ It basically works the same as any other software.  Just go to the File menubar 
 ## Current Features
 - File saving and opening
 - Adding courses, assignment types, assignments, weights, and grades
-
-## Features to Implement before version 1.0 release
-- ~~Grade calculation~~
-- Input validation.
-    - Don't allow the user to type where they shouldn't (ex, they shouldn't be able to enter a weight for an assignment, as all assignments within an assignment type are assumed to have equal weight.)
-    - Don't allow the user to enter invalid strings anywhere (ex, don't let the user enter "A" in the grade column)
+- Grade Calculation
+- Edit using familiar keybinds
 
 ## Features to implement in the future
 - Undo/Redo functionality
 - Allow User to choose a style (css for the technically savy users or premade options for anyone else)
-- ~~Bind the delete key to allow for the deleting of selected rows~~
-- ~~Bind the insert key to allow for inserting rows~~
+

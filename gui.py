@@ -8,7 +8,7 @@
 
 """
 TODO:
-Implement the close functionality (make sure to ask about saving!)
+Spread classes amongst multiple files
 Add undo and redo functionality
 """
 
@@ -16,6 +16,20 @@ import json
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+courseFont = QtGui.QFont()
+courseFont.setBold(True)
+courseFont.setWeight(100)
+courseFont.setPointSize(18)
+
+typeFont = QtGui.QFont()
+typeFont.setUnderline(True)
+typeFont.setPointSize(16)
+typeFont.setWeight(50)
+
+assFont = QtGui.QFont()
+assFont.setItalic(True)
+assFont.setPointSize(14)
+assFont.setWeight(50)
 
 
 class KeyPressedTree(QtWidgets.QTreeWidget):
@@ -27,23 +41,17 @@ class KeyPressedTree(QtWidgets.QTreeWidget):
 
 
 class Course(QtWidgets.QTreeWidgetItem):
-    def __init__(self, parent, data = ["New Course","",""], *__args):
+    def __init__(self, parent, data=["New Course", "", ""], *__args):
         super().__init__(parent, data)
-        font = QtGui.QFont()
-        font.setBold(True)
-        font.setWeight(75)
-        self.setFont(0, font)
-        self.setFont(2, font)
+        self.setFont(0, courseFont)
         self.setFlags(
             QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
 
 
 class AssignmentType(QtWidgets.QTreeWidgetItem):
-    def __init__(self, parent, data = ["New Assignment Type","",""], *__args):
+    def __init__(self, parent, data=["New Assignment Type", "", ""], *__args):
         super().__init__(parent, data)
-        font = QtGui.QFont()
-        font.setUnderline(True)
-        self.setFont(0, font)
+        self.setFont(0, typeFont)
         self.setTextAlignment(1, QtCore.Qt.AlignCenter)
         self.setTextAlignment(2, QtCore.Qt.AlignCenter)
         self.setFlags(
@@ -51,113 +59,128 @@ class AssignmentType(QtWidgets.QTreeWidgetItem):
 
 
 class Assignment(QtWidgets.QTreeWidgetItem):
-    def __init__(self, parent, data = ["New Assignment","",""], *__args):
+    def __init__(self, parent, data=["New Assignment", "", ""], *__args):
         super().__init__(parent, data)
         self.setTextAlignment(2, QtCore.Qt.AlignCenter)
+        self.setFont(0, assFont)
         self.setFlags(
             QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
 
 
+class ValidWeightGradeInput(QtWidgets.QItemDelegate):
+    def createEditor(self, parent, option, index):
+        line = QtWidgets.QLineEdit(parent)
+        reg_ex = QtCore.QRegExp(r"|0?\.\d+|\d*\.?\d+/\d*\.?\d+")
+        input_validator = QtGui.QRegExpValidator(reg_ex, line)
+        line.setValidator(input_validator)
+        return line
+
+
 class FloatDelegate(QtWidgets.QItemDelegate):
-    def __init__(self, decimals, parent=None):
+    def __init__(self, decimals, parent: KeyPressedTree):
+        self.treeWidget = parent
         QtWidgets.QItemDelegate.__init__(self, parent=parent)
         self.nDecimals = decimals
 
+    def createEditor(self, parent, option, index):
+        # if any of the below conditions are met, then the cell is editable.
+        # basically, if the first index is zero, then it's editable
+        # if the weight column for the assignment type item is selected, then it's editable
+        # if the grade column for the assignment item is selected, it's editable
+        # in all other cases, it's not editable.
+        if index.column() == 0:
+            return QtWidgets.QItemDelegate.createEditor(self, parent, option, index)
+        elif (
+                index.column() == 1 and isinstance(self.treeWidget.itemFromIndex(index), AssignmentType)) or (
+                index.column() == 2 and isinstance(self.treeWidget.itemFromIndex(index), Assignment)):
+
+            return ValidWeightGradeInput.createEditor(self, parent, option, index)
+
+
+        else:
+            return None
+
     def paint(self, painter, option, index):
         value = index.model().data(index, QtCore.Qt.EditRole)
+        item = self.treeWidget.itemFromIndex(index)
+        col = index.column()
+
         try:
-            number = float(value)
-            painter.drawText(option.rect, QtCore.Qt.AlignCenter, "{:.{}f}".format(number, self.nDecimals))
+            if isinstance(item, AssignmentType):
+                painter.setPen(QtCore.Qt.darkGreen)
+                painter.setFont(typeFont)
+            elif isinstance(item, Assignment):
+                painter.setPen(QtCore.Qt.blue)
+                painter.setFont(assFont)
+            else:
+                painter.setPen(QtCore.Qt.darkBlue)
+                painter.setFont(courseFont)
 
-        except :
+            if col == 0:
+                QtWidgets.QItemDelegate.paint(self, painter, option, index)
+            else:
+                text = value if "/" in value else "{:.{}f}".format(float(value), self.nDecimals)
+                painter.drawText(option.rect, QtCore.Qt.AlignCenter, text)
+
+        except:
             QtWidgets.QItemDelegate.paint(self, painter, option, index)
-
-# class WeightDelegate(QtWidgets.QItemDelegate):
-#     def __init__(self, decimals, parent=None):
-#         QtWidgets.QItemDelegate.__init__(self, parent=parent)
-#
-#     def paint(self, painter, option, index):
-#         value = index.model().data(index, QtCore.Qt.EditRole)
-#         try:
-#             if "/" in value:
-#                 i = value.find("/")
-#                 x = float(value[:i]) / float(value[i + 1:])
-#                 if x > 1:
-#                     raise Exception
-#
-#             else:
-#                 value = float(value)
-#                 if value > 1:
-#                     value /= 100
-#                     if value > 1:
-#                         raise Exception
-#         except:
-#             value = ""
-#
-#         finally:
-#             painter.drawText(option.rect, QtCore.Qt.AlignCenter, value)
-
-
 
 
 class Ui_MainWindow(QtWidgets.QMainWindow):
     def setupUi(self):
-        self.setObjectName("Grade Manager")
-        self.resize(912, 647)
+        self.setWindowTitle("Grade Manager")
+        self.resize(620, 600)
         self.centralwidget = QtWidgets.QWidget(self)
-        self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.centralwidget)
-        self.verticalLayout.setObjectName("verticalLayout")
         self.treeWidget = KeyPressedTree(self.centralwidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.treeWidget.sizePolicy().hasHeightForWidth())
         self.treeWidget.setSizePolicy(sizePolicy)
-        self.treeWidget.setMinimumSize(QtCore.QSize(900, 600))
+        self.treeWidget.setMinimumSize(QtCore.QSize(620, 600))
+
         font = QtGui.QFont()
-        font.setPointSize(16)
-        font.setBold(False)
-        font.setWeight(50)
-        font.setStrikeOut(False)
+        font.setPointSize(20)
+        font.setWeight(100)
         self.treeWidget.setFont(font)
-        self.treeWidget.viewport().setProperty("cursor", QtGui.QCursor(QtCore.Qt.ArrowCursor))
-        self.treeWidget.setMouseTracking(False)
-        self.treeWidget.setContextMenuPolicy(QtCore.Qt.NoContextMenu)
-        self.treeWidget.setAutoFillBackground(False)
-        self.treeWidget.setFrameShadow(QtWidgets.QFrame.Sunken)
-        self.treeWidget.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
+
         self.treeWidget.setAlternatingRowColors(True)
         self.treeWidget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
-        self.treeWidget.setUniformRowHeights(False)
         self.treeWidget.setAnimated(True)
         self.treeWidget.setWordWrap(True)
-        self.treeWidget.setObjectName("treeWidget")
+
+        self.treeWidget.headerItem().setText(0, "Course")
+        self.treeWidget.headerItem().setText(1, "Weight")
+        self.treeWidget.headerItem().setText(2, "Grade")
         self.treeWidget.headerItem().setTextAlignment(0, QtCore.Qt.AlignCenter)
         self.treeWidget.headerItem().setTextAlignment(1, QtCore.Qt.AlignCenter)
         self.treeWidget.headerItem().setTextAlignment(2, QtCore.Qt.AlignCenter)
-        self.treeWidget.header().setCascadingSectionResizes(False)
-        self.treeWidget.header().setDefaultSectionSize(275)
-        self.treeWidget.header().setMinimumSectionSize(50)
+
+
+        self.treeWidget.setColumnWidth(0,400)
+        self.treeWidget.setColumnWidth(1,100)
+        self.treeWidget.setColumnWidth(2,100)
+        # self.treeWidget.header().setDefaultSectionSize(275)
+        # self.treeWidget.header().setMinimumSectionSize(50)
         self.treeWidget.header().setStretchLastSection(True)
+
         self.verticalLayout.addWidget(self.treeWidget)
         self.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(self)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 912, 35))
-        self.menubar.setObjectName("menubar")
+
         self.menuFile = QtWidgets.QMenu(self.menubar)
-        self.menuFile.setObjectName("menuFile")
+        self.menuFile.setTitle("Fi&le")
+
         self.setMenuBar(self.menubar)
-        self.actionOpen = QtWidgets.QAction(self)
-        self.actionOpen.setObjectName("actionOpen")
-        self.actionClose = QtWidgets.QAction(self)
-        self.actionClose.setObjectName("actionClose")
-        self.actionNew = QtWidgets.QAction(self)
-        self.actionNew.setObjectName("actionNew")
-        self.actionSave = QtWidgets.QAction(self)
-        self.actionSave.setObjectName("actionSave")
-        self.actionSave_as = QtWidgets.QAction(self)
-        self.actionSave_as.setObjectName("actionSave_as")
+        self.actionOpen = QtWidgets.QAction(self, text="&Open")
+        self.actionOpen.setShortcut("Ctrl+O")
+        self.actionClose = QtWidgets.QAction(self, text="&Close")
+        self.actionNew = QtWidgets.QAction(self, text="&New")
+        self.actionSave = QtWidgets.QAction(self, text="&Save")
+        self.actionSave.setShortcut("Ctrl+S")
+        self.actionSave_as = QtWidgets.QAction(self, text="Sa&ve as...")
+        self.actionSave_as.setShortcut("Ctrl+Shift+S")
+
         self.menuFile.addAction(self.actionNew)
         self.menuFile.addAction(self.actionOpen)
         self.menuFile.addAction(self.actionClose)
@@ -166,11 +189,11 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.menuFile.addAction(self.actionSave_as)
         self.menubar.addAction(self.menuFile.menuAction())
 
-        self.retranslateUi()
-        QtCore.QMetaObject.connectSlotsByName(self)
         self.courses = []
-        self.treeWidget.setItemDelegateForColumn(2,FloatDelegate(4))
+        self.treeWidget.setItemDelegate(FloatDelegate(4, self.treeWidget))
+
         self.treeWidget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+
         self.treeWidget.customContextMenuRequested.connect(self.openMenu)
 
         self.actionSave.triggered.connect(self.saveJSON)
@@ -183,25 +206,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.treeWidget.keyPressed.connect(self.keyPressed)
 
         self.filename = None
-
-
-
-    def retranslateUi(self):
-        _translate = QtCore.QCoreApplication.translate
-        self.setWindowTitle(_translate("Grade Manager", "Grade Manager"))
-        self.treeWidget.headerItem().setText(0, _translate("Grade Manager", "Course"))
-        self.treeWidget.headerItem().setText(1, _translate("Grade Manager", "Weight"))
-        self.treeWidget.headerItem().setText(2, _translate("Grade Manager", "Grade"))
-        self.menuFile.setTitle(_translate("Grade Manager", "Fi&le"))
-        self.actionOpen.setText(_translate("Grade Manager", "&Open"))
-        self.actionOpen.setShortcut(_translate("Grade Manager", "Ctrl+O"))
-        self.actionClose.setText(_translate("Grade Manager", "&Close"))
-        self.actionNew.setText(_translate("Grade Manager", "&New"))
-        self.actionSave.setText(_translate("Grade Manager", "&Save"))
-        self.actionSave.setShortcut(_translate("Grade Manager", "Ctrl+S"))
-        self.actionSave_as.setText(_translate("Grade Manager", "Sa&ve as..."))
-        self.actionSave_as.setShortcut(_translate("Grade Manager", "Ctrl+Shift+S"))
-
 
     def clearPage(self):
         answer = QtWidgets.QMessageBox.question(self, "Close Confirmation",
@@ -220,16 +224,17 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         course = Course(self.treeWidget)
         course.setExpanded(True)
         self.courses.append(course)
-    def addType(self,course):
+
+    def addType(self, course):
         t = AssignmentType(course)
         t.setExpanded(True)
         course.addChild(t)
 
-    def addAssignment(self,assignment_type):
+    def addAssignment(self, assignment_type):
         ass = Assignment(assignment_type)
         assignment_type.addChild(ass)
 
-    def removeItem(self,item,level):
+    def removeItem(self, item, level):
         root = self.treeWidget.invisibleRootItem()
         parent = item.parent()
         (parent or root).removeChild(item)
@@ -252,9 +257,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             while i.parent():
                 i = i.parent()
                 level += 1
-            choices = (("Add New Course","Add New Assignment Type","Remove Selected Course"),
-                       ("Add New Assignment","Remove Selected Assignment Type"),("Remove Assignment",))
-
+            choices = (("Add New Course", "Add New Assignment Type", "Remove Selected Course"),
+                       ("Add New Assignment", "Remove Selected Assignment Type"), ("Remove Assignment",))
 
             [menu.addAction(self.tr(act)) for act in choices[level]]
 
@@ -268,9 +272,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             elif action == "Add New Assignment":
                 self.addAssignment(indices[0])
             else:
-                self.removeItem(indices[0],level)
-
-
+                self.removeItem(indices[0], level)
 
     def saveJSON(self):
         self.filename = self.save(self.filename)
@@ -278,13 +280,13 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
     def saveAsJSON(self):
         self.save()
 
-    def transformInput(self,data:str):
+    def transformInput(self, data: str):
         if "/" in data:
             i = data.find("/")
-            return float(data[:i])/float(data[i+1:])
+            return float(data[:i]) / float(data[i + 1:])
         return float(data)
 
-    def updateTypeGrade(self,ass_type):
+    def updateTypeGrade(self, ass_type):
         type_grade = 0.0
         num_assignments = ass_type.childCount()
         for i in range(num_assignments):
@@ -296,7 +298,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         type_grade = f"{type_grade / num_assignments}" if num_assignments > 0 else ""
         ass_type.setText(2, type_grade)
 
-    def updateCourseGrade(self,course):
+    def updateCourseGrade(self, course):
         total_weight = 0.0
         earned_weight = 0.0
         for i in range(course.childCount()):
@@ -321,16 +323,16 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         if isinstance(item, Course) or col == 0:
             return
         elif isinstance(item, Assignment):
-            item = item.parent() # changes assignment to the assignment type
+            item = item.parent()  # changes assignment to the assignment type
             self.updateTypeGrade(item)
         # from this point, the item must be an assignment type.
         self.updateCourseGrade(item.parent())
 
-    def keyPressed(self,key):
+    def keyPressed(self, key):
         indices = self.treeWidget.selectedItems()
 
         level = 0
-        if not indices: # if no tree item is selected
+        if not indices:  # if no tree item is selected
             if key == QtCore.Qt.Key_Insert:
                 self.addCourse()
         else:
@@ -352,29 +354,32 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 elif level == 2:
                     pass
 
-    def save(self,filename=None):
+    def save(self, filename=None):
         if not filename:  # if a file hasn't been opened yet (save as or new file)
-            filename, _ = QtWidgets.QFileDialog.getSaveFileName(self, "QFileDialog.getSaveFileName()", "",
-                                                                     "Gradebook Files (*.grdb)")
+            filename, _ = QtWidgets.QFileDialog.getSaveFileName(self, "QFileDialog.getSaveFileName()", "./",
+                                                                "Gradebook Files (*.grdb)")
         if filename:
             data = {"Course": []}
             for course in self.courses:
-                c_data = {"Name": course.text(0), "Weight": course.text(1), "Grade": course.text(2), "Expanded": course.isExpanded(), "Types": []}
+                c_data = {"Name": course.text(0), "Weight": course.text(1), "Grade": course.text(2),
+                          "Expanded": course.isExpanded(), "Types": []}
                 for i in range(course.childCount()):
                     t = course.child(i)
-                    t_data = {"Name": t.text(0), "Weight": t.text(1), "Grade": t.text(2), "Expanded": t.isExpanded(),"Assignments": []}
+                    t_data = {"Name": t.text(0), "Weight": t.text(1), "Grade": t.text(2), "Expanded": t.isExpanded(),
+                              "Assignments": []}
                     for j in range(t.childCount()):
                         ass = t.child(j)
                         t_data["Assignments"].append({"Name": ass.text(0), "Weight": ass.text(1), "Grade": ass.text(2)})
                     c_data["Types"].append(t_data)
                 data["Course"].append(c_data)
 
-            with open(filename.replace(".grdb","")+".grdb", "w+") as f:
+            with open(filename.replace(".grdb", "") + ".grdb", "w+") as f:
                 json.dump(data, f)
         return filename
 
     def readJSON(self):
-        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","Gradebook Files (*.grdb)")
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
+                                                            "Gradebook Files (*.grdb)")
         if filename:
             with open(filename) as json_file:
                 self.clearPage()
@@ -382,20 +387,19 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 data = json.load(json_file)
 
                 for course_dict in data["Course"]:
-                    course = Course(self.treeWidget,[course_dict["Name"],course_dict["Weight"],course_dict["Grade"]])
+                    course = Course(self.treeWidget, [course_dict["Name"], course_dict["Weight"], course_dict["Grade"]])
                     course.setExpanded(course_dict["Expanded"])
                     for type_dict in course_dict["Types"]:
-                        t = AssignmentType(course,[type_dict["Name"],type_dict["Weight"],type_dict["Grade"]])
+                        t = AssignmentType(course, [type_dict["Name"], type_dict["Weight"], type_dict["Grade"]])
                         t.setExpanded(type_dict["Expanded"])
                         for assignment in type_dict["Assignments"]:
-                            t.addChild(Assignment(t,[assignment["Name"],assignment["Weight"],assignment["Grade"]]))
+                            t.addChild(Assignment(t, [assignment["Name"], assignment["Weight"], assignment["Grade"]]))
                         course.addChild(t)
                     self.courses.append(course)
 
-
     def closeEvent(self, event):
         event.ignore()
-        answer = QtWidgets.QMessageBox.question(self,"Close Confirmation",
+        answer = QtWidgets.QMessageBox.question(self, "Close Confirmation",
                                                 "Would you like to save before exitting?",
                                                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Cancel)
 
@@ -407,10 +411,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         event.accept()
 
 
-
-
-
-
 if __name__ == "__main__":
     import sys
 
@@ -419,7 +419,3 @@ if __name__ == "__main__":
     ui.setupUi()
     ui.show()
     sys.exit(app.exec_())
-
-
-
-
