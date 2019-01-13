@@ -31,6 +31,12 @@ assFont.setItalic(True)
 assFont.setPointSize(14)
 assFont.setWeight(50)
 
+extraCreditFont = QtGui.QFont()
+extraCreditFont.setItalic(True)
+extraCreditFont.setUnderline(True)
+extraCreditFont.setPointSize(14)
+extraCreditFont.setWeight(75)
+
 
 class KeyPressedTree(QtWidgets.QTreeWidget):
     keyPressed = QtCore.pyqtSignal(int)
@@ -52,19 +58,30 @@ class AssignmentType(QtWidgets.QTreeWidgetItem):
     def __init__(self, parent, data=["New Assignment Type", "", ""], *__args):
         super().__init__(parent, data)
         self.setFont(0, typeFont)
-        self.setTextAlignment(1, QtCore.Qt.AlignCenter)
-        self.setTextAlignment(2, QtCore.Qt.AlignCenter)
         self.setFlags(
             QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
+
+        self.extraCredit = False
+
+    def setExtraCredit(self,isExtra):
+        self.extraCredit = isExtra
+    def isExtraCredit(self):
+        return self.extraCredit
 
 
 class Assignment(QtWidgets.QTreeWidgetItem):
     def __init__(self, parent, data=["New Assignment", "", ""], *__args):
         super().__init__(parent, data)
-        self.setTextAlignment(2, QtCore.Qt.AlignCenter)
         self.setFont(0, assFont)
+        self.extraCredit = False
         self.setFlags(
             QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
+
+    def setExtraCredit(self,isExtra):
+        self.extraCredit = isExtra
+    def isExtraCredit(self):
+        return self.extraCredit
+
 
 
 class ValidWeightGradeInput(QtWidgets.QItemDelegate):
@@ -106,19 +123,19 @@ class FloatDelegate(QtWidgets.QItemDelegate):
         col = index.column()
 
         try:
-            if isinstance(item, AssignmentType):
-                painter.setPen(QtCore.Qt.darkGreen)
-                painter.setFont(typeFont)
-            elif isinstance(item, Assignment):
-                painter.setPen(QtCore.Qt.blue)
-                painter.setFont(assFont)
-            else:
-                painter.setPen(QtCore.Qt.darkBlue)
-                painter.setFont(courseFont)
-
             if col == 0:
                 QtWidgets.QItemDelegate.paint(self, painter, option, index)
             else:
+                if isinstance(item, AssignmentType):
+                    painter.setPen(QtCore.Qt.darkGreen)
+                    painter.setFont(typeFont)
+                elif isinstance(item, Assignment):
+                    painter.setPen(QtCore.Qt.blue)
+                    painter.setFont(assFont)
+                else:
+                    painter.setPen(QtCore.Qt.darkBlue)
+                    painter.setFont(courseFont)
+
                 text = value if "/" in value else "{:.{}f}".format(float(value), self.nDecimals)
                 painter.drawText(option.rect, QtCore.Qt.AlignCenter, text)
 
@@ -258,7 +275,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 i = i.parent()
                 level += 1
             choices = (("Add New Course", "Add New Assignment Type", "Remove Selected Course"),
-                       ("Add New Assignment", "Remove Selected Assignment Type"), ("Remove Assignment",))
+                       ("Add New Assignment", "Remove Selected Assignment Type"), ("Remove Assignment",
+                                                                                   "Set As Not Extra Credit" if level == 2 and indices[0].isExtraCredit() else "Set As Extra Credit"))
 
             [menu.addAction(self.tr(act)) for act in choices[level]]
 
@@ -271,6 +289,14 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 self.addType(indices[0])
             elif action == "Add New Assignment":
                 self.addAssignment(indices[0])
+            elif action == "Set As Extra Credit":
+                indices[0].setExtraCredit(True)
+                self.updateTypeGrade(indices[0].parent())
+                indices[0].setFont(0,extraCreditFont)
+            elif action == "Set As Not Extra Credit":
+                indices[0].setExtraCredit(False)
+                self.updateTypeGrade(indices[0].parent())
+                indices[0].setFont(0,assFont)
             else:
                 self.removeItem(indices[0], level)
 
@@ -294,6 +320,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             if not grade:  # if the column is empty
                 num_assignments -= 1
                 continue
+            if ass_type.child(i).isExtraCredit():
+                num_assignments -= 1
             type_grade += self.transformInput(grade)
         type_grade = f"{type_grade / num_assignments}" if num_assignments > 0 else ""
         ass_type.setText(2, type_grade)
@@ -356,7 +384,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 
     def save(self, filename=None):
         if not filename:  # if a file hasn't been opened yet (save as or new file)
-            filename, _ = QtWidgets.QFileDialog.getSaveFileName(self, "QFileDialog.getSaveFileName()", "./",
+            filename, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save File", "./",
                                                                 "Gradebook Files (*.grdb)")
         if filename:
             data = {"Course": []}
@@ -369,7 +397,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                               "Assignments": []}
                     for j in range(t.childCount()):
                         ass = t.child(j)
-                        t_data["Assignments"].append({"Name": ass.text(0), "Weight": ass.text(1), "Grade": ass.text(2)})
+                        t_data["Assignments"].append({"Name": ass.text(0), "Weight": ass.text(1), "Grade": ass.text(2), "Extra Credit": ass.isExtraCredit()})
                     c_data["Types"].append(t_data)
                 data["Course"].append(c_data)
 
@@ -378,7 +406,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         return filename
 
     def readJSON(self):
-        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Select File", "",
                                                             "Gradebook Files (*.grdb)")
         if filename:
             with open(filename) as json_file:
@@ -393,7 +421,11 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                         t = AssignmentType(course, [type_dict["Name"], type_dict["Weight"], type_dict["Grade"]])
                         t.setExpanded(type_dict["Expanded"])
                         for assignment in type_dict["Assignments"]:
-                            t.addChild(Assignment(t, [assignment["Name"], assignment["Weight"], assignment["Grade"]]))
+                            ass = Assignment(t, [assignment["Name"], assignment["Weight"], assignment["Grade"]])
+                            if assignment["Extra Credit"]:
+                                ass.setExtraCredit(True)
+                                ass.setFont(0,extraCreditFont)
+                            t.addChild(ass)
                         course.addChild(t)
                     self.courses.append(course)
 
