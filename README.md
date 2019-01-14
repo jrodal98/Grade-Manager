@@ -36,6 +36,7 @@ It basically works the same as any other software.  Just go to the File menubar 
 ## Current Features
 - File saving and opening
 - Adding courses, assignment types, assignments, weights, and grades
+- Designate an assignment as extra credit
 - Grade Calculation
 - Edit using familiar keybinds
 
