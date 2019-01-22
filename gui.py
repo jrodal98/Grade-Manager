@@ -1,17 +1,3 @@
-# -*- coding: utf-8 -*-
-
-# Form implementation generated from reading ui file 'gradebook.ui'
-#
-# Created by: PyQt5 UI code generator 5.11.3
-#
-# WARNING! All changes made in this file will be lost!
-
-"""
-TODO:
-Spread classes amongst multiple files
-Add undo and redo functionality
-"""
-
 import json
 
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -63,8 +49,9 @@ class AssignmentType(QtWidgets.QTreeWidgetItem):
 
         self.extraCredit = False
 
-    def setExtraCredit(self,isExtra):
+    def setExtraCredit(self, isExtra):
         self.extraCredit = isExtra
+
     def isExtraCredit(self):
         return self.extraCredit
 
@@ -77,11 +64,11 @@ class Assignment(QtWidgets.QTreeWidgetItem):
         self.setFlags(
             QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
 
-    def setExtraCredit(self,isExtra):
+    def setExtraCredit(self, isExtra):
         self.extraCredit = isExtra
+
     def isExtraCredit(self):
         return self.extraCredit
-
 
 
 class ValidWeightGradeInput(QtWidgets.QItemDelegate):
@@ -96,7 +83,7 @@ class ValidWeightGradeInput(QtWidgets.QItemDelegate):
 class FloatDelegate(QtWidgets.QItemDelegate):
     def __init__(self, decimals, parent: KeyPressedTree):
         self.treeWidget = parent
-        QtWidgets.QItemDelegate.__init__(self, parent=parent)
+        super(FloatDelegate, self).__init__(parent=parent)
         self.nDecimals = decimals
 
     def createEditor(self, parent, option, index):
@@ -118,29 +105,30 @@ class FloatDelegate(QtWidgets.QItemDelegate):
             return None
 
     def paint(self, painter, option, index):
-        value = index.model().data(index, QtCore.Qt.EditRole)
         item = self.treeWidget.itemFromIndex(index)
-        col = index.column()
+        if index.column() != 0:
+            font = courseFont
+            color = QtCore.Qt.darkBlue
+            if isinstance(item, AssignmentType):
+                color = QtCore.Qt.darkGreen
+                font = typeFont
+            elif isinstance(item, Assignment):
+                color = QtCore.Qt.blue
+                font = assFont
+            cg = QtGui.QPalette.Normal if option.state & QtWidgets.QStyle.State_Enabled else QtGui.QPalette.Disabled
+            option.palette.setColor(cg, QtGui.QPalette.Text, color)
+            option.font = font
+            option.displayAlignment = QtCore.Qt.AlignCenter
 
-        try:
-            if col == 0:
-                QtWidgets.QItemDelegate.paint(self, painter, option, index)
-            else:
-                if isinstance(item, AssignmentType):
-                    painter.setPen(QtCore.Qt.darkGreen)
-                    painter.setFont(typeFont)
-                elif isinstance(item, Assignment):
-                    painter.setPen(QtCore.Qt.blue)
-                    painter.setFont(assFont)
-                else:
-                    painter.setPen(QtCore.Qt.darkBlue)
-                    painter.setFont(courseFont)
+        super(FloatDelegate, self).paint(painter, option, index)
 
-                text = value if "/" in value else "{:.{}f}".format(float(value), self.nDecimals)
-                painter.drawText(option.rect, QtCore.Qt.AlignCenter, text)
-
-        except:
-            QtWidgets.QItemDelegate.paint(self, painter, option, index)
+    def drawDisplay(self, painter, option, rect, text):
+        if "/" not in text:
+            try:
+                text = "{:.{}f}".format(float(text) * 100, self.nDecimals)
+            except ValueError:
+                pass
+        super(FloatDelegate, self).drawDisplay(painter, option, rect, text)
 
 
 class Ui_MainWindow(QtWidgets.QMainWindow):
@@ -172,10 +160,9 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.treeWidget.headerItem().setTextAlignment(1, QtCore.Qt.AlignCenter)
         self.treeWidget.headerItem().setTextAlignment(2, QtCore.Qt.AlignCenter)
 
-
-        self.treeWidget.setColumnWidth(0,400)
-        self.treeWidget.setColumnWidth(1,100)
-        self.treeWidget.setColumnWidth(2,100)
+        self.treeWidget.setColumnWidth(0, 370)
+        self.treeWidget.setColumnWidth(1, 130)
+        self.treeWidget.setColumnWidth(2, 100)
         # self.treeWidget.header().setDefaultSectionSize(275)
         # self.treeWidget.header().setMinimumSectionSize(50)
         self.treeWidget.header().setStretchLastSection(True)
@@ -207,7 +194,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.menubar.addAction(self.menuFile.menuAction())
 
         self.courses = []
-        self.treeWidget.setItemDelegate(FloatDelegate(4, self.treeWidget))
+        self.treeWidget.setItemDelegate(FloatDelegate(2, self.treeWidget))
 
         self.treeWidget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
 
@@ -223,33 +210,39 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.treeWidget.keyPressed.connect(self.keyPressed)
 
         self.filename = None
+        self.change_made = False
 
     def clearPage(self):
-        answer = QtWidgets.QMessageBox.question(self, "Close Confirmation",
-                                                "Would you like to save before exitting?",
-                                                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Cancel)
+        if self.change_made:
+            answer = QtWidgets.QMessageBox.question(self, "Close Confirmation",
+                                                    "Would you like to save before exiting?",
+                                                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Cancel)
 
-        if answer == QtWidgets.QMessageBox.Cancel:
-            return
-        elif answer == QtWidgets.QMessageBox.Yes:
-            self.saveJSON()
+            if answer == QtWidgets.QMessageBox.Cancel:
+                return
+            elif answer == QtWidgets.QMessageBox.Yes:
+                self.saveJSON()
         self.treeWidget.clear()
         self.courses = []
         self.filename = None
+        self.change_made = False
 
     def addCourse(self):
         course = Course(self.treeWidget)
         course.setExpanded(True)
         self.courses.append(course)
+        self.change_made = True
 
     def addType(self, course):
         t = AssignmentType(course)
         t.setExpanded(True)
         course.addChild(t)
+        self.change_made = True
 
     def addAssignment(self, assignment_type):
         ass = Assignment(assignment_type)
         assignment_type.addChild(ass)
+        self.change_made = True
 
     def removeItem(self, item, level):
         root = self.treeWidget.invisibleRootItem()
@@ -260,6 +253,9 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             self.updateTypeGrade(parent)
         elif level == 1:  # if the assignment type was just removed
             self.updateCourseGrade(parent)
+        else:
+            self.courses.remove(item)
+        self.change_made = True
 
     def openMenu(self, position):
         menu = QtWidgets.QMenu(self)
@@ -276,7 +272,9 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 level += 1
             choices = (("Add New Course", "Add New Assignment Type", "Remove Selected Course"),
                        ("Add New Assignment", "Remove Selected Assignment Type"), ("Remove Assignment",
-                                                                                   "Set As Not Extra Credit" if level == 2 and indices[0].isExtraCredit() else "Set As Extra Credit"))
+                                                                                   "Set As Not Extra Credit" if level == 2 and
+                                                                                                                indices[
+                                                                                                                    0].isExtraCredit() else "Set As Extra Credit"))
 
             [menu.addAction(self.tr(act)) for act in choices[level]]
 
@@ -292,11 +290,13 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             elif action == "Set As Extra Credit":
                 indices[0].setExtraCredit(True)
                 self.updateTypeGrade(indices[0].parent())
-                indices[0].setFont(0,extraCreditFont)
+                indices[0].setFont(0, extraCreditFont)
+                self.change_made = True
             elif action == "Set As Not Extra Credit":
                 indices[0].setExtraCredit(False)
                 self.updateTypeGrade(indices[0].parent())
-                indices[0].setFont(0,assFont)
+                indices[0].setFont(0, assFont)
+                self.change_made = True
             else:
                 self.removeItem(indices[0], level)
 
@@ -341,13 +341,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         course.setText(2, course_grade)
 
     def itemClicked(self, item, col):
-        """
-        Handles input validation and grade calculation.
-        :param item:
-        :param col:
-        :return:
-        """
-
+        self.change_made = True
         if isinstance(item, Course) or col == 0:
             return
         elif isinstance(item, Assignment):
@@ -357,20 +351,25 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.updateCourseGrade(item.parent())
 
     def keyPressed(self, key):
-        indices = self.treeWidget.selectedItems()
+        items = self.treeWidget.selectedItems()
 
         level = 0
-        if not indices:  # if no tree item is selected
+        if not items:  # if no tree item is selected
             if key == QtCore.Qt.Key_Insert:
                 self.addCourse()
         else:
-            i = indices[0]
+            i = items[0]
             while i.parent():
                 i = i.parent()
                 level += 1
-            i = indices[0]
+            i = items[0]
             if key == QtCore.Qt.Key_Delete:
-                self.removeItem(i, level)
+                index = self.treeWidget.selectedIndexes()[0]
+                if (index.column() == 1 and isinstance(self.treeWidget.itemFromIndex(index), AssignmentType)) or (
+                        index.column() == 2 and isinstance(self.treeWidget.itemFromIndex(index), Assignment)):
+                    i.setText(self.treeWidget.selectedIndexes()[0].column(), "")
+                elif index.column() == 0:
+                    self.removeItem(i, level)
 
             else:
                 if level == 0:
@@ -397,12 +396,14 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                               "Assignments": []}
                     for j in range(t.childCount()):
                         ass = t.child(j)
-                        t_data["Assignments"].append({"Name": ass.text(0), "Weight": ass.text(1), "Grade": ass.text(2), "Extra Credit": ass.isExtraCredit()})
+                        t_data["Assignments"].append({"Name": ass.text(0), "Weight": ass.text(1), "Grade": ass.text(2),
+                                                      "Extra Credit": ass.isExtraCredit()})
                     c_data["Types"].append(t_data)
                 data["Course"].append(c_data)
 
             with open(filename.replace(".grdb", "") + ".grdb", "w+") as f:
                 json.dump(data, f)
+            self.change_made = False
         return filename
 
     def readJSON(self):
@@ -424,23 +425,25 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                             ass = Assignment(t, [assignment["Name"], assignment["Weight"], assignment["Grade"]])
                             if assignment["Extra Credit"]:
                                 ass.setExtraCredit(True)
-                                ass.setFont(0,extraCreditFont)
+                                ass.setFont(0, extraCreditFont)
                             t.addChild(ass)
                         course.addChild(t)
                     self.courses.append(course)
+            self.change_made = False
 
     def closeEvent(self, event):
-        event.ignore()
-        answer = QtWidgets.QMessageBox.question(self, "Close Confirmation",
-                                                "Would you like to save before exitting?",
-                                                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Cancel)
+        if self.change_made:
+            event.ignore()
+            answer = QtWidgets.QMessageBox.question(self, "Close Confirmation",
+                                                    "Would you like to save before exiting?",
+                                                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Cancel)
 
-        if answer == QtWidgets.QMessageBox.Cancel:
-            return
-        elif answer == QtWidgets.QMessageBox.Yes:
-            self.saveJSON()
+            if answer == QtWidgets.QMessageBox.Cancel:
+                return
+            elif answer == QtWidgets.QMessageBox.Yes:
+                self.saveJSON()
 
-        event.accept()
+            event.accept()
 
 
 if __name__ == "__main__":
