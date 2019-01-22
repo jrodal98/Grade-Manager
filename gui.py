@@ -81,7 +81,7 @@ class ValidWeightGradeInput(QtWidgets.QItemDelegate):
 
 
 class FloatDelegate(QtWidgets.QItemDelegate):
-    def __init__(self, decimals, parent: KeyPressedTree):
+    def __init__(self, decimals, parent: KeyPressenndTree):
         self.treeWidget = parent
         super(FloatDelegate, self).__init__(parent=parent)
         self.nDecimals = decimals
