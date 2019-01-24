@@ -1,5 +1,5 @@
 import json
-
+import PyQt5
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 courseFont = QtGui.QFont()
@@ -81,7 +81,7 @@ class ValidWeightGradeInput(QtWidgets.QItemDelegate):
 
 
 class FloatDelegate(QtWidgets.QItemDelegate):
-    def __init__(self, decimals, parent: KeyPressenndTree):
+    def __init__(self, decimals, parent: KeyPressedTree):
         self.treeWidget = parent
         super(FloatDelegate, self).__init__(parent=parent)
         self.nDecimals = decimals
