@@ -1,5 +1,6 @@
+#!/usr/bin/python3
 import json
-import PyQt5
+import PyQt5  # allows for the creation of a windows executable
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 courseFont = QtGui.QFont()
@@ -22,6 +23,12 @@ extraCreditFont.setItalic(True)
 extraCreditFont.setUnderline(True)
 extraCreditFont.setPointSize(14)
 extraCreditFont.setWeight(75)
+
+not_in_calc_font = QtGui.QFont()
+not_in_calc_font.setItalic(True)
+not_in_calc_font.setPointSize(14)
+not_in_calc_font.setWeight(50)
+not_in_calc_font.setStrikeOut(True)
 
 
 class KeyPressedTree(QtWidgets.QTreeWidget):
@@ -61,14 +68,21 @@ class Assignment(QtWidgets.QTreeWidgetItem):
         super().__init__(parent, data)
         self.setFont(0, assFont)
         self.extraCredit = False
+        self.in_calculation = True
         self.setFlags(
             QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
 
     def setExtraCredit(self, isExtra):
         self.extraCredit = isExtra
 
+    def set_in_calculation(self, in_calculation):
+        self.in_calculation = in_calculation
+
     def isExtraCredit(self):
         return self.extraCredit
+
+    def is_in_calculation(self):
+        return self.in_calculation
 
 
 class ValidWeightGradeInput(QtWidgets.QItemDelegate):
@@ -99,7 +113,6 @@ class FloatDelegate(QtWidgets.QItemDelegate):
                 index.column() == 2 and isinstance(self.treeWidget.itemFromIndex(index), Assignment)):
 
             return ValidWeightGradeInput.createEditor(self, parent, option, index)
-
 
         else:
             return None
@@ -138,11 +151,11 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.centralwidget = QtWidgets.QWidget(self)
         self.verticalLayout = QtWidgets.QVBoxLayout(self.centralwidget)
         self.treeWidget = KeyPressedTree(self.centralwidget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHeightForWidth(self.treeWidget.sizePolicy().hasHeightForWidth())
         self.treeWidget.setSizePolicy(sizePolicy)
         self.treeWidget.setMinimumSize(QtCore.QSize(620, 600))
-
         font = QtGui.QFont()
         font.setPointSize(20)
         font.setWeight(100)
@@ -273,8 +286,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             choices = (("Add New Course", "Add New Assignment Type", "Remove Selected Course"),
                        ("Add New Assignment", "Remove Selected Assignment Type"), ("Remove Assignment",
                                                                                    "Set As Not Extra Credit" if level == 2 and
-                                                                                                                indices[
-                                                                                                                    0].isExtraCredit() else "Set As Extra Credit"))
+                                                                                   indices[
+                                                                                       0].isExtraCredit() else "Set As Extra Credit", "Remove from grade calculation" if level == 2 and indices[0].is_in_calculation() else "Include in grade calculation"))
 
             [menu.addAction(self.tr(act)) for act in choices[level]]
 
@@ -297,6 +310,16 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 self.updateTypeGrade(indices[0].parent())
                 indices[0].setFont(0, assFont)
                 self.change_made = True
+            elif action == "Remove from grade calculation":
+                indices[0].set_in_calculation(False)
+                self.updateTypeGrade(indices[0].parent())
+                indices[0].setFont(0, not_in_calc_font)
+                self.change_made = True
+            elif action == "Include in grade calculation":
+                indices[0].set_in_calculation(True)
+                self.updateTypeGrade(indices[0].parent())
+                indices[0].setFont(0, extraCreditFont if indices[0].isExtraCredit() else assFont)
+                self.change_made = True
             else:
                 self.removeItem(indices[0], level)
 
@@ -317,7 +340,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         num_assignments = ass_type.childCount()
         for i in range(num_assignments):
             grade = ass_type.child(i).text(2)
-            if not grade:  # if the column is empty
+            if not grade or not ass_type.child(i).is_in_calculation():  # if the column is empty
                 num_assignments -= 1
                 continue
             if ass_type.child(i).isExtraCredit():
@@ -335,7 +358,9 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             grade = t.text(2)
             if not weight or not grade:  # if no weight is entered
                 continue
-            total_weight += self.transformInput(weight)
+            # really bad way of handling extra credit assignment types for now.
+            if t.text(0) != 'Extra Credit':
+                total_weight += self.transformInput(weight)
             earned_weight += self.transformInput(weight) * self.transformInput(grade)
         course_grade = str(earned_weight / total_weight) if total_weight > 0 else ""
         course.setText(2, course_grade)
@@ -397,7 +422,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                     for j in range(t.childCount()):
                         ass = t.child(j)
                         t_data["Assignments"].append({"Name": ass.text(0), "Weight": ass.text(1), "Grade": ass.text(2),
-                                                      "Extra Credit": ass.isExtraCredit()})
+                                                      "Extra Credit": ass.isExtraCredit(), "Included in Grade": ass.is_in_calculation()})
                     c_data["Types"].append(t_data)
                 data["Course"].append(c_data)
 
@@ -416,16 +441,22 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 data = json.load(json_file)
 
                 for course_dict in data["Course"]:
-                    course = Course(self.treeWidget, [course_dict["Name"], course_dict["Weight"], course_dict["Grade"]])
+                    course = Course(self.treeWidget, [
+                                    course_dict["Name"], course_dict["Weight"], course_dict["Grade"]])
                     course.setExpanded(course_dict["Expanded"])
                     for type_dict in course_dict["Types"]:
-                        t = AssignmentType(course, [type_dict["Name"], type_dict["Weight"], type_dict["Grade"]])
+                        t = AssignmentType(
+                            course, [type_dict["Name"], type_dict["Weight"], type_dict["Grade"]])
                         t.setExpanded(type_dict["Expanded"])
                         for assignment in type_dict["Assignments"]:
-                            ass = Assignment(t, [assignment["Name"], assignment["Weight"], assignment["Grade"]])
+                            ass = Assignment(
+                                t, [assignment["Name"], assignment["Weight"], assignment["Grade"]])
                             if assignment["Extra Credit"]:
                                 ass.setExtraCredit(True)
                                 ass.setFont(0, extraCreditFont)
+                            if not assignment["Included in Grade"]:
+                                ass.set_in_calculation(False)
+                                ass.setFont(0, not_in_calc_font)
                             t.addChild(ass)
                         course.addChild(t)
                     self.courses.append(course)
