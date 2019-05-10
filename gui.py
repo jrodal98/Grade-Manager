@@ -38,13 +38,33 @@ class KeyPressedTree(QtWidgets.QTreeWidget):
         super(KeyPressedTree, self).keyPressEvent(event)
         self.keyPressed.emit(event.key())
 
+    def dropEvent(self, QDropEvent):
+        # helpful link https://www.walletfox.com/course/qtreorderabletree.php
+
+        droppedIndex = self.indexAt(QDropEvent.pos()) # index at which the dragged item is being dropped
+
+        if not droppedIndex.isValid():
+            return
+
+        draggedItem = self.currentItem() # item being moved
+        if draggedItem:
+            draggedParent = draggedItem.parent() # parent of the item being moved
+            if draggedParent: # if it has a parent (the item isn't a course)
+                if self.itemFromIndex(droppedIndex.parent()) != draggedParent: # if the parents are different (ex: moving an assignment from one type to another type)
+                    return
+            else: # if i'm trying to move a course
+                draggedParent = self.invisibleRootItem()
+            draggedParent.removeChild(draggedItem) # delete the dragged item
+            draggedParent.insertChild(droppedIndex.row(), draggedItem) # reinsert the dragged item
+
+
 
 class Course(QtWidgets.QTreeWidgetItem):
     def __init__(self, parent, data=["New Course", "", ""], *__args):
         super().__init__(parent, data)
         self.setFont(0, courseFont)
         self.setFlags(
-            QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
+            QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsDropEnabled)
 
 
 class AssignmentType(QtWidgets.QTreeWidgetItem):
@@ -52,7 +72,7 @@ class AssignmentType(QtWidgets.QTreeWidgetItem):
         super().__init__(parent, data)
         self.setFont(0, typeFont)
         self.setFlags(
-            QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
+            QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsEnabled| QtCore.Qt.ItemIsDropEnabled)
 
         self.extraCredit = False
 
@@ -67,7 +87,7 @@ class ExtraCredit(AssignmentType):
         super().__init__(parent, data)
         self.setFont(0, typeFont)
         self.setFlags(
-            QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
+            QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsDropEnabled)
 
 
 class Assignment(QtWidgets.QTreeWidgetItem):
@@ -77,7 +97,7 @@ class Assignment(QtWidgets.QTreeWidgetItem):
         self.extraCredit = False
         self.in_calculation = True
         self.setFlags(
-            QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
+            QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsEnabled)
 
     def setExtraCredit(self, is_extra):
         self.extraCredit = is_extra
@@ -163,6 +183,15 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         sizePolicy.setHeightForWidth(self.treeWidget.sizePolicy().hasHeightForWidth())
         self.treeWidget.setSizePolicy(sizePolicy)
         self.treeWidget.setMinimumSize(QtCore.QSize(620, 600))
+
+
+# Enable drag and drop within the tree widget
+        self.treeWidget.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.treeWidget.setDragEnabled(True)
+        self.treeWidget.setAcceptDrops(True)
+        self.treeWidget.setDropIndicatorShown(True)
+        self.treeWidget.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
+
         font = QtGui.QFont()
         font.setPointSize(20)
         font.setWeight(100)
@@ -390,6 +419,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                     extra_credit += self.transformInput(grade)
         course_grade = str(earned_weight / total_weight + extra_credit) if total_weight > 0 else ""
         course.setText(2, course_grade)
+
 
     def itemClicked(self, item, col):
         self.change_made = True
