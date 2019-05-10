@@ -56,11 +56,18 @@ class AssignmentType(QtWidgets.QTreeWidgetItem):
 
         self.extraCredit = False
 
-    def setExtraCredit(self, isExtra):
-        self.extraCredit = isExtra
+    def set_extra_credit(self, is_extra):
+        self.extraCredit = is_extra
 
-    def isExtraCredit(self):
+    def is_extra_credit(self):
         return self.extraCredit
+
+class ExtraCredit(AssignmentType):
+    def __init__(self, parent,data = ["Extra Credit", "", ""], *__args):
+        super().__init__(parent, data)
+        self.setFont(0, typeFont)
+        self.setFlags(
+            QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
 
 
 class Assignment(QtWidgets.QTreeWidgetItem):
@@ -72,13 +79,13 @@ class Assignment(QtWidgets.QTreeWidgetItem):
         self.setFlags(
             QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
 
-    def setExtraCredit(self, isExtra):
-        self.extraCredit = isExtra
+    def setExtraCredit(self, is_extra):
+        self.extraCredit = is_extra
 
     def set_in_calculation(self, in_calculation):
         self.in_calculation = in_calculation
 
-    def isExtraCredit(self):
+    def is_extra_credit(self):
         return self.extraCredit
 
     def is_in_calculation(self):
@@ -192,6 +199,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.actionOpen = QtWidgets.QAction(self, text="&Open")
         self.actionOpen.setShortcut("Ctrl+O")
         self.actionClose = QtWidgets.QAction(self, text="&Close")
+        self.actionClose.setShortcut("Ctrl+D")
         self.actionNew = QtWidgets.QAction(self, text="&New")
         self.actionSave = QtWidgets.QAction(self, text="&Save")
         self.actionSave.setShortcut("Ctrl+S")
@@ -252,6 +260,12 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         course.addChild(t)
         self.change_made = True
 
+    def addExtraCredit(self,course):
+        extra = ExtraCredit(course)
+        extra.setExpanded(True)
+        course.addChild(extra)
+        self.change_made = True
+
     def addAssignment(self, assignment_type):
         ass = Assignment(assignment_type)
         assignment_type.addChild(ass)
@@ -283,11 +297,11 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             while i.parent():
                 i = i.parent()
                 level += 1
-            choices = (("Add New Course", "Add New Assignment Type", "Remove Selected Course"),
-                       ("Add New Assignment", "Remove Selected Assignment Type"), ("Remove Assignment",
-                                                                                   "Set As Not Extra Credit" if level == 2 and
-                                                                                   indices[
-                                                                                       0].isExtraCredit() else "Set As Extra Credit", "Remove from grade calculation" if level == 2 and indices[0].is_in_calculation() else "Include in grade calculation"))
+
+            course_choices =  ("Add New Course", "Add New Assignment Type", "Add Extra Credit","Remove Selected Course")
+            ass_type_choices = ("Add New Assignment", "Remove Selected Assignment Type")
+            assignment_choices = ("Remove Assignment","Set As Not Extra Credit" if level == 2 and indices[0].is_extra_credit() else "Set As Extra Credit", "Remove from grade calculation" if level == 2 and indices[0].is_in_calculation() else "Include in grade calculation")
+            choices = (course_choices, ass_type_choices, assignment_choices)
 
             [menu.addAction(self.tr(act)) for act in choices[level]]
 
@@ -301,12 +315,12 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             elif action == "Add New Assignment":
                 self.addAssignment(indices[0])
             elif action == "Set As Extra Credit":
-                indices[0].setExtraCredit(True)
+                indices[0].set_extra_credit(True)
                 self.updateTypeGrade(indices[0].parent())
                 indices[0].setFont(0, extraCreditFont)
                 self.change_made = True
             elif action == "Set As Not Extra Credit":
-                indices[0].setExtraCredit(False)
+                indices[0].set_extra_credit(False)
                 self.updateTypeGrade(indices[0].parent())
                 indices[0].setFont(0, assFont)
                 self.change_made = True
@@ -318,8 +332,10 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             elif action == "Include in grade calculation":
                 indices[0].set_in_calculation(True)
                 self.updateTypeGrade(indices[0].parent())
-                indices[0].setFont(0, extraCreditFont if indices[0].isExtraCredit() else assFont)
+                indices[0].setFont(0, extraCreditFont if indices[0].is_extra_credit() else assFont)
                 self.change_made = True
+            elif action == "Add Extra Credit":
+                self.addExtraCredit(indices[0])
             else:
                 self.removeItem(indices[0], level)
 
@@ -338,31 +354,41 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
     def updateTypeGrade(self, ass_type):
         type_grade = 0.0
         num_assignments = ass_type.childCount()
-        for i in range(num_assignments):
-            grade = ass_type.child(i).text(2)
-            if not grade or not ass_type.child(i).is_in_calculation():  # if the column is empty
-                num_assignments -= 1
-                continue
-            if ass_type.child(i).isExtraCredit():
-                num_assignments -= 1
-            type_grade += self.transformInput(grade)
+        if not isinstance(ass_type,ExtraCredit):
+            for i in range(num_assignments):
+                grade = ass_type.child(i).text(2)
+                if not grade or not ass_type.child(i).is_in_calculation():  # if the column is empty
+                    num_assignments -= 1
+                    continue
+                if ass_type.child(i).is_extra_credit():
+                    num_assignments -= 1
+                type_grade += self.transformInput(grade)
+        else:
+            for i in range(num_assignments):
+                grade = ass_type.child(i).text(2)
+                if grade:  # if the column is empty
+                    type_grade += self.transformInput(grade)
+            num_assignments = 1
         type_grade = f"{type_grade / num_assignments}" if num_assignments > 0 else ""
         ass_type.setText(2, type_grade)
 
     def updateCourseGrade(self, course):
         total_weight = 0.0
         earned_weight = 0.0
+        extra_credit = 0.0
         for i in range(course.childCount()):
             t = course.child(i)
             weight = t.text(1)
             grade = t.text(2)
-            if not weight or not grade:  # if no weight is entered
-                continue
-            # really bad way of handling extra credit assignment types for now.
-            if t.text(0) != 'Extra Credit':
+            if not isinstance(t,ExtraCredit):
+                if not weight or not grade:  # if no weight is entered
+                    continue
                 total_weight += self.transformInput(weight)
-            earned_weight += self.transformInput(weight) * self.transformInput(grade)
-        course_grade = str(earned_weight / total_weight) if total_weight > 0 else ""
+                earned_weight += self.transformInput(weight) * self.transformInput(grade)
+            else:
+                if grade:
+                    extra_credit += self.transformInput(grade)
+        course_grade = str(earned_weight / total_weight + extra_credit) if total_weight > 0 else ""
         course.setText(2, course_grade)
 
     def itemClicked(self, item, col):
@@ -418,11 +444,11 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 for i in range(course.childCount()):
                     t = course.child(i)
                     t_data = {"Name": t.text(0), "Weight": t.text(1), "Grade": t.text(2), "Expanded": t.isExpanded(),
-                              "Assignments": []}
+                              "Assignments": [], "Extra Credit":isinstance(t,ExtraCredit)}
                     for j in range(t.childCount()):
                         ass = t.child(j)
                         t_data["Assignments"].append({"Name": ass.text(0), "Weight": ass.text(1), "Grade": ass.text(2),
-                                                      "Extra Credit": ass.isExtraCredit(), "Included in Grade": ass.is_in_calculation()})
+                                                      "Extra Credit": ass.is_extra_credit(), "Included in Grade": ass.is_in_calculation()})
                     c_data["Types"].append(t_data)
                 data["Course"].append(c_data)
 
@@ -445,8 +471,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                                     course_dict["Name"], course_dict["Weight"], course_dict["Grade"]])
                     course.setExpanded(course_dict["Expanded"])
                     for type_dict in course_dict["Types"]:
-                        t = AssignmentType(
-                            course, [type_dict["Name"], type_dict["Weight"], type_dict["Grade"]])
+                        c = ExtraCredit if type_dict["Extra Credit"] else AssignmentType
+                        t = c(course, [type_dict["Name"], type_dict["Weight"], type_dict["Grade"]])
                         t.setExpanded(type_dict["Expanded"])
                         for assignment in type_dict["Assignments"]:
                             ass = Assignment(
