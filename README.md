@@ -30,6 +30,19 @@ To add an assignment for an assignment type, right click the assignment type and
 ### Removing an Assignment
 To remove an assignment, right click the assignment type and select "Remove Selected Assignment."  Alternatively, select the assignment and press the "Delete" key.
 
+### Adding an Extra Credit Category
+This one works slightly different than the rest of the options listed above.  The purpose
+of the extra credit category is to add an unweighted amount of extra credit directly
+to a final course grade.  To do this, right click on the course and select the
+extra credit option.  Then, add assignments like normal.  Make sure that the assignment
+grades that you assign are the raw percentages that you want to add to the course grade.
+For example, if you want to add 2% of extra credit to your final grade, you would
+want to create an assignment and then give it a grade of 0.02, or create multiple assignments
+that add up to a grade of 0.02.
+
+### Reordering Courses, Assignment Types, and Assignments
+This is reasonably intuitive.  Simply drag and drop the label wherever you want it to go.
+
 ### Saving files, opening files, and similar
 It basically works the same as any other software.  Just go to the File menubar or use common shortcuts (Ctrl+S is save, etc).  The extension for the application is .grdb, short for gradebook.
 
@@ -37,10 +50,14 @@ It basically works the same as any other software.  Just go to the File menubar 
 - File saving and opening
 - Adding courses, assignment types, assignments, weights, and grades
 - Add extra credit assignments
+- Add raw extra credit to final course grade
+- Reorder courses, assignment types, and assignments.
 - Grade Calculation
   - Remove specific assignments from grade calculation if desired
 - Edit using familiar keybinds
 
 ## Features to implement in the future
+- Create a setting that allows for a point based grading system as an alternative
+to the weight based system currently implemented.
 - Undo/Redo functionality
 - Allow User to choose a style (css for the technically savy users or premade options for anyone else)
