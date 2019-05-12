@@ -6,7 +6,7 @@ The purpose of this application is to provide a convenient way for students to t
 The application was created using PyQT5.  The application consists of a single window containing a menubar and a tree table widget.
 
 ## How to use the Application
-Clone this repository and install python3 if you haven't already (3.7 was used for the development of the application).  If PyQt5 isn't installed, then running `pip3 install -r requirements.txt` or some variant similar to the command listed should work.  Once everything is setup, running `python3 gui.py` or some similar variant will launch the application.
+Clone this repository and install python3 if you haven't already (3.7 was used for the development of the application).  If PyQt5 isn't installed, then running `pip3 install -r requirements.txt` or some variant similar to the command listed should work.  Once everything is setup, running `python3 gui.py` or some similar variant will launch the application.  Alternatively, there is a windows executable in the dist directory.
 
 ### Adding a Course
 To add a course, right click anywhere blank area in the table or an existing course and select "Add New Course."  Alternatively, press the "Insert" key while not touching any tree items.  Double click the new item to edit its name, or select the item and press the "F2" key.  The Grade Section for the course will be updated automatically as assignments are added and/or removed.
