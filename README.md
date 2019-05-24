@@ -55,9 +55,11 @@ It basically works the same as any other software.  Just go to the File menubar 
 - Grade Calculation
   - Remove specific assignments from grade calculation if desired
 - Edit using familiar keybinds
+- Choose between the default light theme or two dark themes
+- Application caches settings
+  - Upon rebooting the application, the previously selected file and theme will be active.
 
 ## Features to implement in the future
 - Create a setting that allows for a point based grading system as an alternative
 to the weight based system currently implemented.
 - Undo/Redo functionality
-- Allow User to choose a style (css for the technically savy users or premade options for anyone else)
