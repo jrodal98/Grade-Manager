@@ -2,6 +2,9 @@
 import json
 import PyQt5  # allows for the creation of a windows executable
 from PyQt5 import QtCore, QtGui, QtWidgets
+import qdarkstyle
+from QTDark import sheet as darksheet2
+
 
 courseFont = QtGui.QFont()
 courseFont.setBold(True)
@@ -41,22 +44,23 @@ class KeyPressedTree(QtWidgets.QTreeWidget):
     def dropEvent(self, QDropEvent):
         # helpful link https://www.walletfox.com/course/qtreorderabletree.php
 
-        droppedIndex = self.indexAt(QDropEvent.pos()) # index at which the dragged item is being dropped
+        # index at which the dragged item is being dropped
+        droppedIndex = self.indexAt(QDropEvent.pos())
 
         if not droppedIndex.isValid():
             return
 
-        draggedItem = self.currentItem() # item being moved
+        draggedItem = self.currentItem()  # item being moved
         if draggedItem:
-            draggedParent = draggedItem.parent() # parent of the item being moved
-            if draggedParent: # if it has a parent (the item isn't a course)
-                if self.itemFromIndex(droppedIndex.parent()) != draggedParent: # if the parents are different (ex: moving an assignment from one type to another type)
+            draggedParent = draggedItem.parent()  # parent of the item being moved
+            if draggedParent:  # if it has a parent (the item isn't a course)
+                # if the parents are different (ex: moving an assignment from one type to another type)
+                if self.itemFromIndex(droppedIndex.parent()) != draggedParent:
                     return
-            else: # if i'm trying to move a course
+            else:  # if i'm trying to move a course
                 draggedParent = self.invisibleRootItem()
-            draggedParent.removeChild(draggedItem) # delete the dragged item
-            draggedParent.insertChild(droppedIndex.row(), draggedItem) # reinsert the dragged item
-
+            draggedParent.removeChild(draggedItem)  # delete the dragged item
+            draggedParent.insertChild(droppedIndex.row(), draggedItem)  # reinsert the dragged item
 
 
 class Course(QtWidgets.QTreeWidgetItem):
@@ -72,7 +76,7 @@ class AssignmentType(QtWidgets.QTreeWidgetItem):
         super().__init__(parent, data)
         self.setFont(0, typeFont)
         self.setFlags(
-            QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsEnabled| QtCore.Qt.ItemIsDropEnabled)
+            QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsDropEnabled)
 
         self.extraCredit = False
 
@@ -82,8 +86,9 @@ class AssignmentType(QtWidgets.QTreeWidgetItem):
     def is_extra_credit(self):
         return self.extraCredit
 
+
 class ExtraCredit(AssignmentType):
-    def __init__(self, parent,data = ["Extra Credit", "", ""], *__args):
+    def __init__(self, parent, data=["Extra Credit", "", ""], *__args):
         super().__init__(parent, data)
         self.setFont(0, typeFont)
         self.setFlags(
@@ -172,7 +177,15 @@ class FloatDelegate(QtWidgets.QItemDelegate):
 
 
 class Ui_MainWindow(QtWidgets.QMainWindow):
-    def setupUi(self):
+    def setupUi(self, app):
+        self.app = app
+
+        # initializing cached settings
+        self.settings = QtCore.QSettings("JSR", "Grade Manager")
+        self.theme_num = int(self.settings.value("theme_num", -1)) % 3
+        self.changeTheme()
+        self.filename = self.settings.value("filename", None)
+
         self.setWindowTitle("Grade Manager")
         self.resize(620, 600)
         self.centralwidget = QtWidgets.QWidget(self)
@@ -223,6 +236,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 
         self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setTitle("Fi&le")
+        self.themeFile = QtWidgets.QMenu(self.menubar)
+        self.themeFile.setTitle("Style")
 
         self.setMenuBar(self.menubar)
         self.actionOpen = QtWidgets.QAction(self, text="&Open")
@@ -243,6 +258,10 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.menuFile.addAction(self.actionSave_as)
         self.menubar.addAction(self.menuFile.menuAction())
 
+        self.changeStyle = QtWidgets.QAction(self, text="&Change Style")
+        self.themeFile.addAction(self.changeStyle)
+        self.menubar.addAction(self.themeFile.menuAction())
+
         self.courses = []
         self.treeWidget.setItemDelegate(FloatDelegate(2, self.treeWidget))
 
@@ -255,12 +274,15 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.actionSave_as.triggered.connect(self.saveAsJSON)
         self.actionNew.triggered.connect(self.clearPage)
         self.actionClose.triggered.connect(self.close)
+        self.changeStyle.triggered.connect(self.changeTheme)
 
         self.treeWidget.itemChanged.connect(self.itemClicked)
         self.treeWidget.keyPressed.connect(self.keyPressed)
 
-        self.filename = None
         self.change_made = False
+
+        if self.filename:
+            self.openFile(self.filename)
 
     def clearPage(self):
         if self.change_made:
@@ -289,7 +311,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         course.addChild(t)
         self.change_made = True
 
-    def addExtraCredit(self,course):
+    def addExtraCredit(self, course):
         extra = ExtraCredit(course)
         extra.setExpanded(True)
         course.addChild(extra)
@@ -327,9 +349,11 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 i = i.parent()
                 level += 1
 
-            course_choices =  ("Add New Course", "Add New Assignment Type", "Add Extra Credit","Remove Selected Course")
+            course_choices = ("Add New Course", "Add New Assignment Type",
+                              "Add Extra Credit", "Remove Selected Course")
             ass_type_choices = ("Add New Assignment", "Remove Selected Assignment Type")
-            assignment_choices = ("Remove Assignment","Set As Not Extra Credit" if level == 2 and indices[0].is_extra_credit() else "Set As Extra Credit", "Remove from grade calculation" if level == 2 and indices[0].is_in_calculation() else "Include in grade calculation")
+            assignment_choices = ("Remove Assignment", "Set As Not Extra Credit" if level == 2 and indices[0].is_extra_credit(
+            ) else "Set As Extra Credit", "Remove from grade calculation" if level == 2 and indices[0].is_in_calculation() else "Include in grade calculation")
             choices = (course_choices, ass_type_choices, assignment_choices)
 
             [menu.addAction(self.tr(act)) for act in choices[level]]
@@ -383,7 +407,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
     def updateTypeGrade(self, ass_type):
         type_grade = 0.0
         num_assignments = ass_type.childCount()
-        if not isinstance(ass_type,ExtraCredit):
+        if not isinstance(ass_type, ExtraCredit):
             for i in range(num_assignments):
                 grade = ass_type.child(i).text(2)
                 if not grade or not ass_type.child(i).is_in_calculation():  # if the column is empty
@@ -409,7 +433,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             t = course.child(i)
             weight = t.text(1)
             grade = t.text(2)
-            if not isinstance(t,ExtraCredit):
+            if not isinstance(t, ExtraCredit):
                 if not weight or not grade:  # if no weight is entered
                     continue
                 total_weight += self.transformInput(weight)
@@ -419,7 +443,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                     extra_credit += self.transformInput(grade)
         course_grade = str(earned_weight / total_weight + extra_credit) if total_weight > 0 else ""
         course.setText(2, course_grade)
-
 
     def itemClicked(self, item, col):
         self.change_made = True
@@ -474,7 +497,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 for i in range(course.childCount()):
                     t = course.child(i)
                     t_data = {"Name": t.text(0), "Weight": t.text(1), "Grade": t.text(2), "Expanded": t.isExpanded(),
-                              "Assignments": [], "Extra Credit":isinstance(t,ExtraCredit)}
+                              "Assignments": [], "Extra Credit": isinstance(t, ExtraCredit)}
                     for j in range(t.childCount()):
                         ass = t.child(j)
                         t_data["Assignments"].append({"Name": ass.text(0), "Weight": ass.text(1), "Grade": ass.text(2),
@@ -491,32 +514,35 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Select File", "",
                                                             "Gradebook Files (*.grdb)")
         if filename:
-            with open(filename) as json_file:
-                self.clearPage()
-                self.filename = filename
-                data = json.load(json_file)
+            self.openFile(filename)
 
-                for course_dict in data["Course"]:
-                    course = Course(self.treeWidget, [
-                                    course_dict["Name"], course_dict["Weight"], course_dict["Grade"]])
-                    course.setExpanded(course_dict["Expanded"])
-                    for type_dict in course_dict["Types"]:
-                        c = ExtraCredit if type_dict["Extra Credit"] else AssignmentType
-                        t = c(course, [type_dict["Name"], type_dict["Weight"], type_dict["Grade"]])
-                        t.setExpanded(type_dict["Expanded"])
-                        for assignment in type_dict["Assignments"]:
-                            ass = Assignment(
-                                t, [assignment["Name"], assignment["Weight"], assignment["Grade"]])
-                            if assignment["Extra Credit"]:
-                                ass.setExtraCredit(True)
-                                ass.setFont(0, extraCreditFont)
-                            if not assignment["Included in Grade"]:
-                                ass.set_in_calculation(False)
-                                ass.setFont(0, not_in_calc_font)
-                            t.addChild(ass)
-                        course.addChild(t)
-                    self.courses.append(course)
-            self.change_made = False
+    def openFile(self, filename):
+        with open(filename) as json_file:
+            self.clearPage()
+            self.filename = filename
+            data = json.load(json_file)
+
+            for course_dict in data["Course"]:
+                course = Course(self.treeWidget, [
+                                course_dict["Name"], course_dict["Weight"], course_dict["Grade"]])
+                course.setExpanded(course_dict["Expanded"])
+                for type_dict in course_dict["Types"]:
+                    c = ExtraCredit if type_dict["Extra Credit"] else AssignmentType
+                    t = c(course, [type_dict["Name"], type_dict["Weight"], type_dict["Grade"]])
+                    t.setExpanded(type_dict["Expanded"])
+                    for assignment in type_dict["Assignments"]:
+                        ass = Assignment(
+                            t, [assignment["Name"], assignment["Weight"], assignment["Grade"]])
+                        if assignment["Extra Credit"]:
+                            ass.setExtraCredit(True)
+                            ass.setFont(0, extraCreditFont)
+                        if not assignment["Included in Grade"]:
+                            ass.set_in_calculation(False)
+                            ass.setFont(0, not_in_calc_font)
+                        t.addChild(ass)
+                    course.addChild(t)
+                self.courses.append(course)
+        self.change_made = False
 
     def closeEvent(self, event):
         if self.change_made:
@@ -531,13 +557,28 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 self.saveJSON()
 
             event.accept()
+        self.settings.setValue("theme_num", self.theme_num - 1)
+        self.settings.setValue("filename", self.filename if self.filename else "")
+
+    def changeTheme(self):
+        if self.theme_num == 0:
+            # switch to dark theme 1
+            self.app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
+        elif self.theme_num == 1:
+            # switch to dark theme 2
+            self.app.setStyleSheet(darksheet2)
+        else:
+            # switch to light theme
+            self.app.setStyleSheet("")
+
+        self.theme_num = (self.theme_num + 1) % 3
 
 
 if __name__ == "__main__":
     import sys
-
     app = QtWidgets.QApplication(sys.argv)
+    # set default style here?
     ui = Ui_MainWindow()
-    ui.setupUi()
+    ui.setupUi(app)
     ui.show()
     sys.exit(app.exec_())
