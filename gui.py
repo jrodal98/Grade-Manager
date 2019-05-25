@@ -10,11 +10,10 @@ from QTDark import sheet as darksheet2
 # TODO:
 0) Add images to readme
 1) move code into separate files.  For example, the completed fonts can be
-loaded in from a python file similar to QTDark
-3) Create a better solution for switching between themes.
-4) implement the other method of recording grades (point system rather than weights)
-5) In general, try to clean up and comment the code.
-6) Once all of the above have been implemented, release the final version and create
+loaded in from a python file similar to QTDark.  Comment code.
+2) Create a better solution for switching between themes.
+3) implement the other method of recording grades (point system rather than weights)
+4) Once all of the above have been implemented, release the final version and create
 the next windows executable.
 
 This should all be finished before the start of next semester (seems very reasonable)
