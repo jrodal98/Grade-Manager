@@ -1,9 +1,27 @@
 #!/usr/bin/python3
+import os
 import json
 import PyQt5  # allows for the creation of a windows executable
 from PyQt5 import QtCore, QtGui, QtWidgets
 import qdarkstyle
 from QTDark import sheet as darksheet2
+
+"""
+# TODO:
+0) Add images to readme
+1) move code into separate files.  For example, the completed fonts can be
+loaded in from a python file similar to QTDark
+2) get rid of self.courses - I'm fairly confident the tree widget stores this info
+3) Create a better solution for switching between themes.
+4) implement the other method of recording grades (point system rather than weights)
+5) In general, try to clean up and comment the code.
+6) Once all of the above have been implemented, release the next version and create
+the next windows executable.
+
+This should all be finished before the start of next semester (seems very reasonable)
+The final boss will be implementing undo/redo functionality.  If this can be achieved,
+then the project is pretty much done.
+"""
 
 
 courseFont = QtGui.QFont()
@@ -281,7 +299,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 
         self.change_made = False
 
-        if self.filename:
+        # if a file has been cached and it still exists:
+        if os.path.isfile(self.filename):
             self.openFile(self.filename)
 
     def clearPage(self):
