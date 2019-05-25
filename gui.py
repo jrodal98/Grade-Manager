@@ -14,7 +14,7 @@ loaded in from a python file similar to QTDark
 3) Create a better solution for switching between themes.
 4) implement the other method of recording grades (point system rather than weights)
 5) In general, try to clean up and comment the code.
-6) Once all of the above have been implemented, release the next version and create
+6) Once all of the above have been implemented, release the final version and create
 the next windows executable.
 
 This should all be finished before the start of next semester (seems very reasonable)
@@ -55,6 +55,7 @@ class KeyPressedTree(QtWidgets.QTreeWidget):
     keyPressed = QtCore.pyqtSignal(int)
     order_swapped = False
     current_course = -1
+    theme_num = 0
 
     def keyPressEvent(self, event):
         super(KeyPressedTree, self).keyPressEvent(event)
@@ -99,6 +100,30 @@ class KeyPressedTree(QtWidgets.QTreeWidget):
 
     def set_swap_status(self, swap_status):
         self.order_swapped = swap_status
+
+    def set_theme_num(self, num):
+        self.theme_num = num
+
+    def get_theme_num(self):
+        return self.theme_num
+
+    def get_course_color(self):
+        if self.theme_num > 0:  # dark theme
+            return QtCore.Qt.cyan
+        else:  # light theme
+            return QtCore.Qt.darkBlue
+
+    def get_type_color(self):
+        if self.theme_num > 0:  # dark theme
+            return QtCore.Qt.green
+        else:  # light theme
+            return QtCore.Qt.darkGreen
+
+    def get_ass_color(self):
+        if self.theme_num > 0:  # dark theme
+            return QtCore.Qt.yellow
+        else:  # light theme
+            return QtCore.Qt.blue
 
 
 class Course(QtWidgets.QTreeWidgetItem):
@@ -191,12 +216,12 @@ class FloatDelegate(QtWidgets.QItemDelegate):
         item = self.treeWidget.itemFromIndex(index)
         if index.column() != 0:
             font = courseFont
-            color = QtCore.Qt.darkBlue
+            color = self.treeWidget.get_course_color()
             if isinstance(item, AssignmentType):
-                color = QtCore.Qt.darkGreen
+                color = self.treeWidget.get_type_color()
                 font = typeFont
             elif isinstance(item, Assignment):
-                color = QtCore.Qt.blue
+                color = self.treeWidget.get_ass_color()
                 font = assFont
             cg = QtGui.QPalette.Normal if option.state & QtWidgets.QStyle.State_Enabled else QtGui.QPalette.Disabled
             option.palette.setColor(cg, QtGui.QPalette.Text, color)
@@ -217,7 +242,8 @@ class FloatDelegate(QtWidgets.QItemDelegate):
 class Ui_MainWindow(QtWidgets.QMainWindow):
     def setupUi(self, app):
         self.app = app
-
+        self.centralwidget = QtWidgets.QWidget(self)
+        self.treeWidget = KeyPressedTree(self.centralwidget)
         # initializing cached settings
         self.settings = QtCore.QSettings("JSR", "Grade Manager")
         self.theme_num = int(self.settings.value("theme_num", -1)) % 3
@@ -226,9 +252,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 
         self.setWindowTitle("Grade Manager")
         self.resize(620, 600)
-        self.centralwidget = QtWidgets.QWidget(self)
         self.verticalLayout = QtWidgets.QVBoxLayout(self.centralwidget)
-        self.treeWidget = KeyPressedTree(self.centralwidget)
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHeightForWidth(self.treeWidget.sizePolicy().hasHeightForWidth())
@@ -607,6 +631,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             self.app.setStyleSheet("")
 
         self.theme_num = (self.theme_num + 1) % 3
+        self.treeWidget.set_theme_num(self.theme_num)
 
 
 if __name__ == "__main__":
