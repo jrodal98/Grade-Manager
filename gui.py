@@ -11,7 +11,6 @@ from QTDark import sheet as darksheet2
 0) Add images to readme
 1) move code into separate files.  For example, the completed fonts can be
 loaded in from a python file similar to QTDark
-2) get rid of self.courses - I'm fairly confident the tree widget stores this info
 3) Create a better solution for switching between themes.
 4) implement the other method of recording grades (point system rather than weights)
 5) In general, try to clean up and comment the code.
@@ -54,6 +53,8 @@ not_in_calc_font.setStrikeOut(True)
 
 class KeyPressedTree(QtWidgets.QTreeWidget):
     keyPressed = QtCore.pyqtSignal(int)
+    order_swapped = False
+    current_course = -1
 
     def keyPressEvent(self, event):
         super(KeyPressedTree, self).keyPressEvent(event)
@@ -79,6 +80,25 @@ class KeyPressedTree(QtWidgets.QTreeWidget):
                 draggedParent = self.invisibleRootItem()
             draggedParent.removeChild(draggedItem)  # delete the dragged item
             draggedParent.insertChild(droppedIndex.row(), draggedItem)  # reinsert the dragged item
+            self.order_swapped = True
+
+    # next two methods let me iterate through the courses in the tree
+    def __iter__(self):
+        self.current_course = -1
+        return self
+
+    def __next__(self):
+        self.current_course += 1
+        if self.current_course >= self.topLevelItemCount():
+            raise StopIteration
+        else:
+            return self.topLevelItem(self.current_course)
+
+    def has_been_swapped(self):
+        return self.order_swapped
+
+    def set_swap_status(self, swap_status):
+        self.order_swapped = swap_status
 
 
 class Course(QtWidgets.QTreeWidgetItem):
@@ -215,7 +235,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.treeWidget.setSizePolicy(sizePolicy)
         self.treeWidget.setMinimumSize(QtCore.QSize(620, 600))
 
-
 # Enable drag and drop within the tree widget
         self.treeWidget.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         self.treeWidget.setDragEnabled(True)
@@ -280,7 +299,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.themeFile.addAction(self.changeStyle)
         self.menubar.addAction(self.themeFile.menuAction())
 
-        self.courses = []
         self.treeWidget.setItemDelegate(FloatDelegate(2, self.treeWidget))
 
         self.treeWidget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
@@ -304,7 +322,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             self.openFile(self.filename)
 
     def clearPage(self):
-        if self.change_made:
+        if self.change_made or self.treeWidget.has_been_swapped():
             answer = QtWidgets.QMessageBox.question(self, "Close Confirmation",
                                                     "Would you like to save before exiting?",
                                                     QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Cancel)
@@ -314,14 +332,13 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             elif answer == QtWidgets.QMessageBox.Yes:
                 self.saveJSON()
         self.treeWidget.clear()
-        self.courses = []
+        self.treeWidget.set_swap_status(False)
         self.filename = None
         self.change_made = False
 
     def addCourse(self):
         course = Course(self.treeWidget)
         course.setExpanded(True)
-        self.courses.append(course)
         self.change_made = True
 
     def addType(self, course):
@@ -350,8 +367,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             self.updateTypeGrade(parent)
         elif level == 1:  # if the assignment type was just removed
             self.updateCourseGrade(parent)
-        else:
-            self.courses.remove(item)
         self.change_made = True
 
     def openMenu(self, position):
@@ -510,7 +525,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                                                                 "Gradebook Files (*.grdb)")
         if filename:
             data = {"Course": []}
-            for course in self.courses:
+            for course in self.treeWidget:
                 c_data = {"Name": course.text(0), "Weight": course.text(1), "Grade": course.text(2),
                           "Expanded": course.isExpanded(), "Types": []}
                 for i in range(course.childCount()):
@@ -527,6 +542,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             with open(filename.replace(".grdb", "") + ".grdb", "w+") as f:
                 json.dump(data, f)
             self.change_made = False
+            self.treeWidget.set_swap_status(False)
         return filename
 
     def readJSON(self):
@@ -560,11 +576,11 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                             ass.setFont(0, not_in_calc_font)
                         t.addChild(ass)
                     course.addChild(t)
-                self.courses.append(course)
         self.change_made = False
+        self.treeWidget.set_swap_status(False)
 
     def closeEvent(self, event):
-        if self.change_made:
+        if self.change_made or self.treeWidget.has_been_swapped():
             event.ignore()
             answer = QtWidgets.QMessageBox.question(self, "Close Confirmation",
                                                     "Would you like to save before exiting?",
