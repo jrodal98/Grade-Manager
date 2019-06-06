@@ -79,7 +79,8 @@ class KeyPressedTree(QtWidgets.QTreeWidget):
             else:  # if i'm trying to move a course
                 draggedParent = self.invisibleRootItem()
             draggedParent.removeChild(draggedItem)  # delete the dragged item
-            draggedParent.insertChild(droppedIndex.row(), draggedItem)  # reinsert the dragged item
+            # reinsert the dragged item
+            draggedParent.insertChild(droppedIndex.row(), draggedItem)
             self.order_swapped = True
 
     # next two methods let me iterate through the courses in the tree
@@ -254,16 +255,19 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.verticalLayout = QtWidgets.QVBoxLayout(self.centralwidget)
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        sizePolicy.setHeightForWidth(self.treeWidget.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.treeWidget.sizePolicy().hasHeightForWidth())
         self.treeWidget.setSizePolicy(sizePolicy)
         self.treeWidget.setMinimumSize(QtCore.QSize(620, 600))
 
 # Enable drag and drop within the tree widget
-        self.treeWidget.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.treeWidget.setSelectionMode(
+            QtWidgets.QAbstractItemView.SingleSelection)
         self.treeWidget.setDragEnabled(True)
         self.treeWidget.setAcceptDrops(True)
         self.treeWidget.setDropIndicatorShown(True)
-        self.treeWidget.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
+        self.treeWidget.setDragDropMode(
+            QtWidgets.QAbstractItemView.InternalMove)
 
         font = QtGui.QFont()
         font.setPointSize(20)
@@ -271,7 +275,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.treeWidget.setFont(font)
 
         self.treeWidget.setAlternatingRowColors(True)
-        self.treeWidget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
+        self.treeWidget.setSelectionBehavior(
+            QtWidgets.QAbstractItemView.SelectItems)
         self.treeWidget.setAnimated(True)
         self.treeWidget.setWordWrap(True)
 
@@ -341,7 +346,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.change_made = False
 
         # if a file has been cached and it still exists:
-        if os.path.isfile(self.filename):
+        if self.filename and os.path.isfile(self.filename):
             self.openFile(self.filename)
 
     def clearPage(self):
@@ -408,7 +413,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 
             course_choices = ("Add New Course", "Add New Assignment Type",
                               "Add Extra Credit", "Remove Selected Course")
-            ass_type_choices = ("Add New Assignment", "Remove Selected Assignment Type")
+            ass_type_choices = ("Add New Assignment",
+                                "Remove Selected Assignment Type")
             assignment_choices = ("Remove Assignment", "Set As Not Extra Credit" if level == 2 and indices[0].is_extra_credit(
             ) else "Set As Extra Credit", "Remove from grade calculation" if level == 2 and indices[0].is_in_calculation() else "Include in grade calculation")
             choices = (course_choices, ass_type_choices, assignment_choices)
@@ -442,7 +448,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             elif action == "Include in grade calculation":
                 indices[0].set_in_calculation(True)
                 self.updateTypeGrade(indices[0].parent())
-                indices[0].setFont(0, extraCreditFont if indices[0].is_extra_credit() else assFont)
+                indices[0].setFont(
+                    0, extraCreditFont if indices[0].is_extra_credit() else assFont)
                 self.change_made = True
             elif action == "Add Extra Credit":
                 self.addExtraCredit(indices[0])
@@ -467,7 +474,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         if not isinstance(ass_type, ExtraCredit):
             for i in range(num_assignments):
                 grade = ass_type.child(i).text(2)
-                if not grade or not ass_type.child(i).is_in_calculation():  # if the column is empty
+                # if the column is empty
+                if not grade or not ass_type.child(i).is_in_calculation():
                     num_assignments -= 1
                     continue
                 if ass_type.child(i).is_extra_credit():
@@ -494,11 +502,13 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 if not weight or not grade:  # if no weight is entered
                     continue
                 total_weight += self.transformInput(weight)
-                earned_weight += self.transformInput(weight) * self.transformInput(grade)
+                earned_weight += self.transformInput(
+                    weight) * self.transformInput(grade)
             else:
                 if grade:
                     extra_credit += self.transformInput(grade)
-        course_grade = str(earned_weight / total_weight + extra_credit) if total_weight > 0 else ""
+        course_grade = str(earned_weight / total_weight +
+                           extra_credit) if total_weight > 0 else ""
         course.setText(2, course_grade)
 
     def itemClicked(self, item, col):
@@ -528,7 +538,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 index = self.treeWidget.selectedIndexes()[0]
                 if (index.column() == 1 and isinstance(self.treeWidget.itemFromIndex(index), AssignmentType)) or (
                         index.column() == 2 and isinstance(self.treeWidget.itemFromIndex(index), Assignment)):
-                    i.setText(self.treeWidget.selectedIndexes()[0].column(), "")
+                    i.setText(self.treeWidget.selectedIndexes()
+                              [0].column(), "")
                 elif index.column() == 0:
                     self.removeItem(i, level)
 
@@ -543,7 +554,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                     pass
 
     def save(self, filename=None):
-        if not filename:  # if a file hasn't been opened yet (save as or new file)
+        # if a file hasn't been opened yet (save as or new file)
+        if not filename:
             filename, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save File", "./",
                                                                 "Gradebook Files (*.grdb)")
         if filename:
@@ -586,7 +598,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 course.setExpanded(course_dict["Expanded"])
                 for type_dict in course_dict["Types"]:
                     c = ExtraCredit if type_dict["Extra Credit"] else AssignmentType
-                    t = c(course, [type_dict["Name"], type_dict["Weight"], type_dict["Grade"]])
+                    t = c(course, [type_dict["Name"],
+                                   type_dict["Weight"], type_dict["Grade"]])
                     t.setExpanded(type_dict["Expanded"])
                     for assignment in type_dict["Assignments"]:
                         ass = Assignment(
@@ -616,7 +629,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 
             event.accept()
         self.settings.setValue("theme_num", self.theme_num - 1)
-        self.settings.setValue("filename", self.filename if self.filename else "")
+        self.settings.setValue(
+            "filename", self.filename if self.filename else "")
 
     def changeTheme(self):
         if self.theme_num == 0:
