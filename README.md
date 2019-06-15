@@ -19,6 +19,7 @@ pip3 install -r requirements.txt
 python3 gui.py
 ```
 
+If the application doesn't seem to be displaying correctly, try using a different style.  I haven't experienced any issues on linux (fedora and ubuntu), but I've had inconsistencies when running on windows.
 ### Adding a Course
 To add a course, right click anywhere blank area in the table or an existing course and select "Add New Course."  Alternatively, press the "Insert" key while not touching any tree items.  Double click the new item to edit its name, or select the item and press the "F2" key.  The Grade Section for the course will be updated automatically as assignments are added and/or removed.
 
