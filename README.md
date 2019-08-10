@@ -2,15 +2,32 @@
 
 The purpose of this application is to provide a convenient way for students to track their grades for multiple courses.
 
-# Application Description
+## Current Features
+
+- Adding courses, assignment types, assignments, weights, and grades
+- Add extra credit assignments
+- Add raw extra credit to final course grade
+- Reorder courses, assignment types, and assignments.
+- Grade Calculation
+  - Remove specific assignments from grade calculation if desired
+- Edit using familiar keybinds
+- Choose between the default light theme or two dark themes
+- Application caches settings
+  - Upon rebooting the application, the previously selected file and theme will be active.
+  
 The application was created using PyQT5.  The application consists of a single window containing a menubar and a tree table widget.  It comes with three different styles: a light theme and two dark themes.
 
 ![alt text](images/light_theme.png "Light theme")
 ![alt text](images/dark_theme1.png "Dark theme #1")
-![alt text](images/dark_theme2.png "Dark theme #2")
+![alt text](images/dark_theme2.png "QTDark")
+
+The creators of the dark theme style sheets are listed in the [Acknowledgements](##Acknowledgements) section.
 
 ## How to use the Application
-Clone this repository and install python3 if you haven't already (3.7 was used for the development of the application).  If PyQt5 isn't installed, then running `pip3 install -r requirements.txt` or some variant similar to the command listed should work.  Once everything is setup, running `python3 gui.py` or some similar variant will launch the application.  Alternatively, there is a windows executable in the dist directory, though it is not always up to date.
+
+### Download Instructions
+
+Clone this repository and install python 3.6+ if you haven't already (3.7 was used for the development of the application).  If PyQt5 isn't installed, then running `pip3 install -r requirements.txt` or some variant similar to the command listed should work.  Once everything is setup, running `python3 gui.py` or some similar variant will launch the application.  Alternatively, there is a windows executable in the dist directory, though it is not always up to date.
 
 ```bash
 git clone https://github.com/jrodal98/Grade_Manager.git
@@ -19,7 +36,7 @@ pip3 install -r requirements.txt
 python3 gui.py
 ```
 
-If the application doesn't seem to be displaying correctly, try using a different style.  I haven't experienced any issues on linux (fedora and ubuntu), but I've had inconsistencies when running on windows.
+If the application doesn't seem to be displaying correctly, try using a different style.  I haven't experienced any issues on linux (arch, fedora 29/30, ubuntu 18.04/19.04), nor have I seen issues on mac os, but I've had inconsistencies when running on windows.
 ### Adding a Course
 To add a course, right click anywhere blank area in the table or an existing course and select "Add New Course."  Alternatively, press the "Insert" key while not touching any tree items.  Double click the new item to edit its name, or select the item and press the "F2" key.  The Grade Section for the course will be updated automatically as assignments are added and/or removed.
 
@@ -58,20 +75,6 @@ This is reasonably intuitive.  Simply drag and drop the label wherever you want 
 ### Saving files, opening files, and similar
 It basically works the same as any other software.  Just go to the File menubar or use common shortcuts (Ctrl+S is save, etc).  The extension for the application is .grdb, short for gradebook.
 
-## Current Features
-- File saving and opening
-- Adding courses, assignment types, assignments, weights, and grades
-- Add extra credit assignments
-- Add raw extra credit to final course grade
-- Reorder courses, assignment types, and assignments.
-- Grade Calculation
-  - Remove specific assignments from grade calculation if desired
-- Edit using familiar keybinds
-- Choose between the default light theme or two dark themes
-- Application caches settings
-  - Upon rebooting the application, the previously selected file and theme will be active.
+## Acknowledgements
 
-## Features to implement in the future
-- Create a setting that allows for a point based grading system as an alternative
-to the weight based system currently implemented.
-- Undo/Redo functionality
+The first depicted dark theme is QDarkStyle by Colin Duquesnoy and can be found [here](https://github.com/ColinDuquesnoy/QDarkStyleSheet).  The second depicted dark theme is QTDark by Emanuel Claesson and can be found [here](https://github.com/EClaesson/QTDark).
