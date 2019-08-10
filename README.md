@@ -27,13 +27,13 @@ The creators of the dark theme style sheets are listed in the [Acknowledgements]
 
 ### Download Instructions
 
-Clone this repository and install python 3.6+ if you haven't already (3.7 was used for the development of the application).  If PyQt5 isn't installed, then running `pip3 install -r requirements.txt` or some variant similar to the command listed should work.  Once everything is setup, running `python3 gui.py` or some similar variant will launch the application.  Alternatively, there is a windows executable in the dist directory, though it is not always up to date.
+Clone this repository and install python 3.6+ if you haven't already (3.7 was used for the development of the application).  If PyQt5 isn't installed, then running `pip3 install -r requirements.txt` or some variant similar to the command listed should work.  Once everything is setup, running `python3 src/gui.py` or some similar variant will launch the application.  Alternatively, there is a windows executable in the dist directory, though it is not always up to date.
 
 ```bash
 git clone https://github.com/jrodal98/Grade_Manager.git
 cd Grade_Manager
 pip3 install -r requirements.txt
-python3 gui.py
+python3 src/gui.py
 ```
 
 If the application doesn't seem to be displaying correctly, try using a different style.  I haven't experienced any issues on linux (arch, fedora 29/30, ubuntu 18.04/19.04), nor have I seen issues on mac os, but I've had inconsistencies when running on windows.
