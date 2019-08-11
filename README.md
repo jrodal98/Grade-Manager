@@ -41,11 +41,11 @@ If the application doesn't seem to be displaying correctly, try using a differen
 ### Example
 
 To test your installation and/or look at an example of how the different functionalities
-were used to track a my spring 2019 grades, open the `spring2019.grdb` file.  Feel free to
-edit the file as you go through the following tutorial on how to use the application.
+were used to track my spring 2019 grades, open the `spring2019.grdb` file.  Feel free to
+edit the file as you follow the tutorial below.
 
 ### Adding a Course
-To add a course, right click anywhere blank area in the table or an existing course and select "Add New Course."  Alternatively, press the "Insert" key while not touching any tree items.  Double click the new item to edit its name, or select the item and press the "F2" key.  The Grade Section for the course will be updated automatically as assignments are added and/or removed.
+To add a course, right click anywhere blank area in the table or an existing course and select "Add New Course."  Alternatively, press the "Insert" key while not touching any tree items.  Double click the new item to edit its name, or select the item and press the "F2" key.  The grade section for the course will be updated automatically as assignments are added and/or removed.
 
 ### Removing a Course
 To remove a course, right click the course and select "Remove Selected Course." Double click the new item to edit its name.  Alternatively, select the course and press the "Delete" key.
