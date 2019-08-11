@@ -37,6 +37,13 @@ python3 src/gui.py
 ```
 
 If the application doesn't seem to be displaying correctly, try using a different style.  I haven't experienced any issues on linux (arch, fedora 29/30, ubuntu 18.04/19.04), nor have I seen issues on mac os, but I've had inconsistencies when running on windows.
+
+### Example
+
+To test your installation and/or look at an example of how the different functionalities
+were used to track a my spring 2019 grades, open the `spring2019.grdb` file.  Feel free to
+edit the file as you go through the following tutorial on how to use the application.
+
 ### Adding a Course
 To add a course, right click anywhere blank area in the table or an existing course and select "Add New Course."  Alternatively, press the "Insert" key while not touching any tree items.  Double click the new item to edit its name, or select the item and press the "F2" key.  The Grade Section for the course will be updated automatically as assignments are added and/or removed.
 
