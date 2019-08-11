@@ -21,7 +21,7 @@ The application was created using PyQT5.  The application consists of a single w
 ![alt text](images/dark_theme1.png "Dark theme #1")
 ![alt text](images/dark_theme2.png "QTDark")
 
-The creators of the dark theme style sheets are listed in the [Acknowledgements](##Acknowledgements) section.
+The creators of the dark theme style sheets are listed in the [Acknowledgements](##acknowledgements) section.
 
 ## How to use the Application
 
