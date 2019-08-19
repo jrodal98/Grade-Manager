@@ -7,10 +7,10 @@ Code repository: https://github.com/jrodal98/Grade_Manager
 import os
 import json
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtWidgets
 from fonts import assFont, extraCreditFont, not_in_calc_font
 from widgets import Course, AssignmentType, Assignment, ExtraCredit, \
-    KeyPressedTree
+    GradebookTree
 from themes import qdarkstyle, QTDark
 from input_verifiers import FloatDelegate
 
@@ -19,7 +19,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
     def setupUi(self, app):
         self.app = app
         self.centralwidget = QtWidgets.QWidget(self)
-        self.treeWidget = KeyPressedTree(self.centralwidget)
+        self.treeWidget = GradebookTree(self.centralwidget)
         # initializing cached settings
         self.settings = QtCore.QSettings("JSR", "Grade Manager")
         self.theme_num = int(self.settings.value("theme_num", -1)) % 3
@@ -27,7 +27,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.filename = self.settings.value("filename", None)
 
         self.setWindowTitle("Grade Manager")
-        self.resize(620, 600)
+        self.resize(int(self.settings.value("window_width", 620)),
+                    int(self.settings.value("window_height", 600)))
         self.verticalLayout = QtWidgets.QVBoxLayout(self.centralwidget)
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
@@ -35,40 +36,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             self.treeWidget.sizePolicy().hasHeightForWidth())
         self.treeWidget.setSizePolicy(sizePolicy)
         self.treeWidget.setMinimumSize(QtCore.QSize(620, 600))
-
-# Enable drag and drop within the tree widget
-        self.treeWidget.setSelectionMode(
-            QtWidgets.QAbstractItemView.SingleSelection)
-        self.treeWidget.setDragEnabled(True)
-        self.treeWidget.setAcceptDrops(True)
-        self.treeWidget.setDropIndicatorShown(True)
-        self.treeWidget.setDragDropMode(
-            QtWidgets.QAbstractItemView.InternalMove)
-
-        font = QtGui.QFont()
-        font.setPointSize(20)
-        font.setWeight(100)
-        self.treeWidget.setFont(font)
-
-        self.treeWidget.setAlternatingRowColors(True)
-        self.treeWidget.setSelectionBehavior(
-            QtWidgets.QAbstractItemView.SelectItems)
-        self.treeWidget.setAnimated(True)
-        self.treeWidget.setWordWrap(True)
-
-        self.treeWidget.headerItem().setText(0, "Course")
-        self.treeWidget.headerItem().setText(1, "Weight")
-        self.treeWidget.headerItem().setText(2, "Grade")
-        self.treeWidget.headerItem().setTextAlignment(0, QtCore.Qt.AlignCenter)
-        self.treeWidget.headerItem().setTextAlignment(1, QtCore.Qt.AlignCenter)
-        self.treeWidget.headerItem().setTextAlignment(2, QtCore.Qt.AlignCenter)
-
-        self.treeWidget.setColumnWidth(0, 370)
-        self.treeWidget.setColumnWidth(1, 130)
-        self.treeWidget.setColumnWidth(2, 100)
-        # self.treeWidget.header().setDefaultSectionSize(275)
-        # self.treeWidget.header().setMinimumSectionSize(50)
-        self.treeWidget.header().setStretchLastSection(True)
 
         self.verticalLayout.addWidget(self.treeWidget)
         self.setCentralWidget(self.centralwidget)
@@ -141,6 +108,13 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.treeWidget.set_swap_status(False)
         self.filename = None
         self.change_made = False
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        width = self.size().width()
+        self.treeWidget.setColumnWidth(0, 370/630 * width)
+        self.treeWidget.setColumnWidth(1, 130/630 * width)
+        self.treeWidget.setColumnWidth(2, 100/630 * width)
 
     def addCourse(self):
         course = Course(self.treeWidget)
@@ -439,6 +413,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.settings.setValue("theme_num", self.theme_num - 1)
         self.settings.setValue(
             "filename", self.filename if self.filename else "")
+        self.settings.setValue("window_width", self.size().width())
+        self.settings.setValue("window_height", self.size().height())
 
     def changeTheme(self):
         if self.theme_num == 0:

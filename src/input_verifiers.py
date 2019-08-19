@@ -5,7 +5,7 @@ Code repository: https://github.com/jrodal98/Grade_Manager
 """
 
 from PyQt5 import QtWidgets, QtCore, QtGui
-from widgets import KeyPressedTree, Assignment, AssignmentType
+from widgets import GradebookTree, Assignment, AssignmentType
 
 
 class ValidWeightGradeInput(QtWidgets.QItemDelegate):
@@ -18,7 +18,7 @@ class ValidWeightGradeInput(QtWidgets.QItemDelegate):
 
 
 class FloatDelegate(QtWidgets.QItemDelegate):
-    def __init__(self, decimals, parent: KeyPressedTree):
+    def __init__(self, decimals, parent: GradebookTree):
         self.treeWidget = parent
         super(FloatDelegate, self).__init__(parent=parent)
         self.nDecimals = decimals
