@@ -276,7 +276,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         if isinstance(item, Course):
             return
         elif isinstance(item, Assignment) and col == 0:
-            # determine if the bash {0..10}-like syntax was used
+            # determine if the bash `mkdir example{0..10}` syntax is used.
+            # if so, make multiple assignments following such syntax.
             m = re.search(r"(.+){(\d+)\.\.(\d+)}", item.text(0))
             if m:
                 text = m.group(1)
