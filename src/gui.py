@@ -6,6 +6,7 @@ Code repository: https://github.com/jrodal98/Grade_Manager
 
 import os
 import json
+import re
 
 from PyQt5 import QtCore, QtWidgets
 from fonts import assFont, extraCreditFont, not_in_calc_font
@@ -133,8 +134,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         course.addChild(extra)
         self.change_made = True
 
-    def addAssignment(self, assignment_type):
-        ass = Assignment(assignment_type)
+    def addAssignment(self, assignment_type, text="New Assignment"):
+        ass = Assignment(assignment_type, data=[text, "", ""])
         assignment_type.addChild(ass)
         self.change_made = True
 
@@ -272,7 +273,16 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 
     def itemClicked(self, item, col):
         self.change_made = True
-        if isinstance(item, Course) or col == 0:
+        if isinstance(item, Course):
+            return
+        elif isinstance(item, Assignment) and col == 0:
+            # determine if the bash {0..10}-like syntax was used
+            m = re.search(r"(.+){(\d+)\.\.(\d+)}", item.text(0))
+            if m:
+                text = m.group(1)
+                item.setText(0, text + m.group(2))
+                for i in range(int(m.group(2))+1, int(m.group(3)) + 1):
+                    self.addAssignment(item.parent(), f"{text}{i}")
             return
         elif isinstance(item, Assignment):
             item = item.parent()  # changes assignment to the assignment type
