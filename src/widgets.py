@@ -191,7 +191,6 @@ class AssignmentType(QtWidgets.QTreeWidgetItem):
                 if not assignment.is_extra_credit():
                     nnwnec += 1
                 non_weighted_grades += transformInput(grade)
-        print(weight, weighted_grades, non_weighted_grades, nnwnec)
         if weight == 0 and nnwnec == 0:
             type_grade = ""
         elif nnwnec == 0 and weight != 0:
