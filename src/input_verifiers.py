@@ -5,7 +5,7 @@ Code repository: https://github.com/jrodal98/Grade_Manager
 """
 
 from PyQt5 import QtWidgets, QtCore, QtGui
-from widgets import GradebookTree, Assignment, AssignmentType
+from widgets import GradebookTree, Assignment, AssignmentType, Course
 
 
 class ValidWeightGradeInput(QtWidgets.QItemDelegate):
@@ -33,8 +33,8 @@ class FloatDelegate(QtWidgets.QItemDelegate):
             return QtWidgets.QItemDelegate.createEditor(self, parent,
                                                         option, index)
         elif (
-                index.column() == 1 and isinstance(
-                    self.treeWidget.itemFromIndex(index), AssignmentType)) or (
+                index.column() == 1 and not isinstance(
+                    self.treeWidget.itemFromIndex(index), Course)) or (
                 index.column() == 2 and isinstance(
                     self.treeWidget.itemFromIndex(index), Assignment)):
 
