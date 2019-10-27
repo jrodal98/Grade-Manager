@@ -32,3 +32,7 @@ not_in_calc_font.setItalic(True)
 not_in_calc_font.setPointSize(14)
 not_in_calc_font.setWeight(50)
 not_in_calc_font.setStrikeOut(True)
+
+treeFont = QtGui.QFont()
+treeFont.setPointSize(16)
+treeFont.setWeight(100)

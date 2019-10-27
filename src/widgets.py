@@ -5,17 +5,43 @@ Code repository: https://github.com/jrodal98/Grade_Manager
 """
 
 from PyQt5 import QtWidgets, QtCore
-from fonts import courseFont, assFont, extraCreditFont, typeFont
+from fonts import courseFont, assFont, extraCreditFont, typeFont, treeFont
 
 
-class KeyPressedTree(QtWidgets.QTreeWidget):
+class GradebookTree(QtWidgets.QTreeWidget):
     keyPressed = QtCore.pyqtSignal(int)
-    order_swapped = False
-    current_course = -1
-    theme_num = 0
+
+    def __init__(self, central_widget):
+        super().__init__(central_widget)
+        self.order_swapped = False
+        self.current_course = -1
+        self.theme_num = 0
+        self.setSelectionMode(
+            QtWidgets.QAbstractItemView.SingleSelection)
+        self.setDragEnabled(True)
+        self.setAcceptDrops(True)
+        self.setDropIndicatorShown(True)
+        self.setDragDropMode(
+            QtWidgets.QAbstractItemView.InternalMove)
+        self.setFont(treeFont)
+
+        self.setAlternatingRowColors(True)
+        self.setSelectionBehavior(
+            QtWidgets.QAbstractItemView.SelectItems)
+        self.setAnimated(True)
+        self.setWordWrap(True)
+
+        self.headerItem().setText(0, "Course")
+        self.headerItem().setText(1, "Weight")
+        self.headerItem().setText(2, "Grade")
+        self.headerItem().setTextAlignment(0, QtCore.Qt.AlignCenter)
+        self.headerItem().setTextAlignment(1, QtCore.Qt.AlignCenter)
+        self.headerItem().setTextAlignment(2, QtCore.Qt.AlignCenter)
+
+        self.header().setStretchLastSection(True)
 
     def keyPressEvent(self, event):
-        super(KeyPressedTree, self).keyPressEvent(event)
+        super(GradebookTree, self).keyPressEvent(event)
         self.keyPressed.emit(event.key())
 
     def dropEvent(self, QDropEvent):
