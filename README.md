@@ -82,6 +82,14 @@ This is reasonably intuitive.  Simply drag and drop the label wherever you want 
 ### Saving files, opening files, and similar
 It basically works the same as any other software.  Just go to the File menubar or use common shortcuts (Ctrl+S is save, etc).  The extension for the application is .grdb, short for gradebook.
 
+## Advanced Features
+
+I am looking into adding a few advanced features for powerusers.  I will add them to the readme as they are developed.
+
+### Bash-like expansion
+
+Create multiple assignments that follow the same naming pattern by putting a bash pattern in for the assignment name.  For example the assignment name could be `Homework {1..3}` and the application will automatically generate assignments named `Homework 1`, `Homework 2`, and `Homework 3`.
+
 ## Acknowledgements
 
 The first depicted dark theme is QDarkStyle by Colin Duquesnoy and can be found [here](https://github.com/ColinDuquesnoy/QDarkStyleSheet).  The second depicted dark theme is QTDark by Emanuel Claesson and can be found [here](https://github.com/EClaesson/QTDark).
