@@ -88,4 +88,3 @@ class FloatDelegate(QtWidgets.QItemDelegate):
                 pass
         super(FloatDelegate, self).drawDisplay(painter, option, rect, text)
 
-

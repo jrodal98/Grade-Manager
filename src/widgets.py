@@ -250,3 +250,4 @@ class ExtraCredit(AssignmentType):
         type_grade = str(type_grade) if num_assignments > 0 \
             else ""
         self.setText(2, type_grade)
+
