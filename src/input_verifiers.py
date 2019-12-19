@@ -5,15 +5,40 @@ Code repository: https://github.com/jrodal98/Grade_Manager
 """
 
 from PyQt5 import QtWidgets, QtCore, QtGui
-from widgets import GradebookTree, Assignment, AssignmentType
+from widgets import GradebookTree, Assignment, AssignmentType, Course
+import re
+
+
+class ValidWeightGradeValidator(QtGui.QValidator):
+    def __init__(self, parent=None):
+        QtGui.QValidator.__init__(self, parent)
+
+    def validate(self, line, pos):
+        """
+        Handles the validation of grades and weights.
+
+        Intermediate means that the input isn't valid yet, but it
+        might be valid soon.
+
+        Acceptable means that the input is valid
+        """
+        # divide by 0 checker
+        if re.match(r".*\/0([^.]|$|\.(0{4,}.*|0{1,4}([^0-9]|$))).*", line):
+            return QtGui.QValidator.Intermediate, line, pos
+
+        if line in ("", "0", "1") or \
+                re.match(r"^0?\.\d+|\d*\.?\d+/\d*\.?\d+$", line):
+            return QtGui.QValidator.Acceptable, line, pos
+        elif re.match(r"^|0?\.\d*|\d*\.?\d*/\d*\.?\d*$", line):
+            return QtGui.QValidator.Intermediate, line, pos
+        else:
+            return QtGui.QValidator.Invalid, line, pos
 
 
 class ValidWeightGradeInput(QtWidgets.QItemDelegate):
     def createEditor(self, parent, option, index):
         line = QtWidgets.QLineEdit(parent)
-        reg_ex = QtCore.QRegExp(r"|0?\.\d+|\d*\.?\d+/\d*\.?\d+")
-        input_validator = QtGui.QRegExpValidator(reg_ex, line)
-        line.setValidator(input_validator)
+        line.setValidator(ValidWeightGradeValidator())
         return line
 
 
@@ -33,8 +58,8 @@ class FloatDelegate(QtWidgets.QItemDelegate):
             return QtWidgets.QItemDelegate.createEditor(self, parent,
                                                         option, index)
         elif (
-                index.column() == 1 and isinstance(
-                    self.treeWidget.itemFromIndex(index), AssignmentType)) or (
+                index.column() == 1 and not isinstance(
+                    self.treeWidget.itemFromIndex(index), Course)) or (
                 index.column() == 2 and isinstance(
                     self.treeWidget.itemFromIndex(index), Assignment)):
 
@@ -62,3 +87,4 @@ class FloatDelegate(QtWidgets.QItemDelegate):
             except ValueError:
                 pass
         super(FloatDelegate, self).drawDisplay(painter, option, rect, text)
+

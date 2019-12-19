@@ -144,10 +144,10 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         parent = item.parent()
         (parent or root).removeChild(item)
 
-        if level == 2:  # if just the assignment was removed
-            self.updateTypeGrade(parent)
-        elif level == 1:  # if the assignment type was just removed
-            self.updateCourseGrade(parent)
+        # if the assignment was removed
+        # or if the assignment type was removed
+        if level == 1 or level == 2:  # if just the assignment was removed
+            parent.updateGrade()
         self.change_made = True
 
     def openMenu(self, position):
@@ -190,22 +190,22 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
                 self.addAssignment(indices[0])
             elif action == "Set As Extra Credit":
                 indices[0].set_extra_credit(True)
-                self.updateTypeGrade(indices[0].parent())
+                indices[0].parent().updateGrade()
                 indices[0].setFont(0, extraCreditFont)
                 self.change_made = True
             elif action == "Set As Not Extra Credit":
                 indices[0].set_extra_credit(False)
-                self.updateTypeGrade(indices[0].parent())
+                indices[0].parent().updateGrade()
                 indices[0].setFont(0, assFont)
                 self.change_made = True
             elif action == "Remove from grade calculation":
                 indices[0].set_in_calculation(False)
-                self.updateTypeGrade(indices[0].parent())
+                indices[0].parent().updateGrade()
                 indices[0].setFont(0, not_in_calc_font)
                 self.change_made = True
             elif action == "Include in grade calculation":
                 indices[0].set_in_calculation(True)
-                self.updateTypeGrade(indices[0].parent())
+                indices[0].parent().updateGrade()
                 indices[0].setFont(
                     0, extraCreditFont if indices[0].is_extra_credit()
                     else assFont)
@@ -220,56 +220,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 
     def saveAsJSON(self):
         self.save()
-
-    def transformInput(self, data: str):
-        if "/" in data:
-            i = data.find("/")
-            return float(data[:i]) / float(data[i + 1:])
-        return float(data)
-
-    def updateTypeGrade(self, ass_type):
-        type_grade = 0.0
-        num_assignments = ass_type.childCount()
-        if not isinstance(ass_type, ExtraCredit):
-            for i in range(num_assignments):
-                grade = ass_type.child(i).text(2)
-                # if the column is empty
-                if not grade or not ass_type.child(i).is_in_calculation():
-                    num_assignments -= 1
-                    continue
-                if ass_type.child(i).is_extra_credit():
-                    num_assignments -= 1
-                type_grade += self.transformInput(grade)
-        else:
-            for i in range(num_assignments):
-                grade = ass_type.child(i).text(2)
-                if grade:  # if the column is empty
-                    type_grade += self.transformInput(grade)
-            num_assignments = 1
-        type_grade = f"{type_grade / num_assignments}" if num_assignments > 0 \
-            else ""
-        ass_type.setText(2, type_grade)
-
-    def updateCourseGrade(self, course):
-        total_weight = 0.0
-        earned_weight = 0.0
-        extra_credit = 0.0
-        for i in range(course.childCount()):
-            t = course.child(i)
-            weight = t.text(1)
-            grade = t.text(2)
-            if not isinstance(t, ExtraCredit):
-                if not weight or not grade:  # if no weight is entered
-                    continue
-                total_weight += self.transformInput(weight)
-                earned_weight += self.transformInput(
-                    weight) * self.transformInput(grade)
-            else:
-                if grade:
-                    extra_credit += self.transformInput(grade)
-        course_grade = str(earned_weight / total_weight +
-                           extra_credit) if total_weight > 0 else ""
-        course.setText(2, course_grade)
 
     def itemClicked(self, item, col):
         self.change_made = True
@@ -287,9 +237,9 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             return
         elif isinstance(item, Assignment):
             item = item.parent()  # changes assignment to the assignment type
-            self.updateTypeGrade(item)
+            item.updateGrade()
         # from this point, the item must be an assignment type.
-        self.updateCourseGrade(item.parent())
+        item.parent().updateGrade()
 
     def keyPressed(self, key):
         items = self.treeWidget.selectedItems()
@@ -449,3 +399,4 @@ if __name__ == "__main__":
     ui.setupUi(app)
     ui.show()
     sys.exit(app.exec_())
+
