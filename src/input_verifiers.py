@@ -87,4 +87,3 @@ class FloatDelegate(QtWidgets.QItemDelegate):
             except ValueError:
                 pass
         super(FloatDelegate, self).drawDisplay(painter, option, rect, text)
-

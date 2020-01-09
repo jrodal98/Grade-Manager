@@ -113,9 +113,9 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
     def resizeEvent(self, event):
         super().resizeEvent(event)
         width = self.size().width()
-        self.treeWidget.setColumnWidth(0, 370/630 * width)
-        self.treeWidget.setColumnWidth(1, 130/630 * width)
-        self.treeWidget.setColumnWidth(2, 100/630 * width)
+        self.treeWidget.setColumnWidth(0, int(370/630 * width))
+        self.treeWidget.setColumnWidth(1, int(130/630 * width))
+        self.treeWidget.setColumnWidth(2, int(100/630 * width))
 
     def addCourse(self):
         course = Course(self.treeWidget)
@@ -399,4 +399,3 @@ if __name__ == "__main__":
     ui.setupUi(app)
     ui.show()
     sys.exit(app.exec_())
-
